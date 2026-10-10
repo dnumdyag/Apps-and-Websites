@@ -48,17 +48,17 @@ struct OnboardingView: View {
 
     private var heroScreen: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 16) {
                 hero
 
                 if step == 0 {
-                    ScreenTitle(text: "Let's find your blind spot. ", accent: "Then we work on it.")
+                    ScreenTitle(text: "Let's find your blind spot. ", accent: "Then we work on it.", size: 34)
                     Text("A few quick questions so I can build a plan around you. It takes about a minute.")
                         .font(Theme.sans(15))
                         .foregroundStyle(Theme.muted)
                         .lineSpacing(3)
                 } else {
-                    ScreenTitle(text: "You've found your blind spot. ", accent: "Now we work on it.")
+                    ScreenTitle(text: "You've found your blind spot. ", accent: "Now we work on it.", size: 34)
                     VStack(alignment: .leading, spacing: 6) {
                         Text("YOUR QUIZ RESULT")
                             .font(Theme.sans(11, .semibold))
@@ -110,7 +110,7 @@ struct OnboardingView: View {
     private var hero: some View {
         ZStack(alignment: .bottomLeading) {
             Color.clear
-                .frame(height: step == 0 ? 340 : 300)
+                .frame(height: 270)
                 .frame(maxWidth: .infinity)
                 .overlay(alignment: .top) {
                     Image("mia_hero").resizable().scaledToFill()
