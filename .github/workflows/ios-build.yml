@@ -52,13 +52,21 @@ jobs:
           mkdir -p shots
           xcrun simctl launch "$UDID" com.coachmia.app
           sleep 8
-          xcrun simctl io "$UDID" screenshot shots/0-welcome.png
+          xcrun simctl io "$UDID" screenshot shots/00-welcome.png
           xcrun simctl terminate "$UDID" com.coachmia.app
           n=1
           for tab in home journey mia sessions community; do
             xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -tab $tab
             sleep 6
-            xcrun simctl io "$UDID" screenshot shots/$n-$tab.png
+            xcrun simctl io "$UDID" screenshot shots/$(printf %02d $n)-$tab.png
+            xcrun simctl terminate "$UDID" com.coachmia.app
+            n=$((n+1))
+          done
+          # Every other screen, sheet and quiz step (see ScreenshotScreen.swift).
+          for screen in quiz1 quiz2 quiz3 result profile module membership booking group events recordings event chat; do
+            xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -screen $screen
+            sleep 5
+            xcrun simctl io "$UDID" screenshot shots/$(printf %02d $n)-$screen.png
             xcrun simctl terminate "$UDID" com.coachmia.app
             n=$((n+1))
           done

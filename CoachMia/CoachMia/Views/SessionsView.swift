@@ -10,10 +10,14 @@ struct SessionsView: View {
         case recordings = "Recordings"
     }
 
-    @State private var segment: Segment = .upcoming
+    @State private var segment: Segment
     @State private var theme = "All"
     @State private var playing: Recording?
     @State private var eventToBook: MemberEvent?
+
+    init(startSegment: Segment = .upcoming) {
+        _segment = State(initialValue: startSegment)
+    }
 
     var body: some View {
         NavigationStack {
@@ -254,16 +258,18 @@ struct SessionsView: View {
         VStack(spacing: 12) {
             ForEach(MockData.recordings) { recording in
                 HStack(alignment: .top, spacing: 14) {
-                    ZStack {
-                        FillPhoto(name: recording.image, height: 96, width: 96, radius: 16)
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color(hex: 0xF3D9A0))
-                            .frame(width: 34, height: 34)
-                            .liquidGlass(in: Circle(), tint: Color(hex: 0x081813, opacity: 0.55)) {
-                                $0.background(Color(hex: 0x081813, opacity: 0.78), in: Circle())
-                            }
-                    }
+                    FillPhoto(name: recording.image, height: 96, width: 96, radius: 16)
+                        // In the corner so it never covers the coach's face.
+                        .overlay(alignment: .bottomTrailing) {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color(hex: 0xF3D9A0))
+                                .frame(width: 28, height: 28)
+                                .liquidGlass(in: Circle(), tint: Color(hex: 0x081813, opacity: 0.55)) {
+                                    $0.background(Color(hex: 0x081813, opacity: 0.78), in: Circle())
+                                }
+                                .padding(6)
+                        }
                     VStack(alignment: .leading, spacing: 3) {
                         Text(recording.title)
                             .font(Theme.serif(20, .semibold))

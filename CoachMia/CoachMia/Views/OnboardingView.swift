@@ -3,7 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
     @EnvironmentObject var state: AppState
 
-    @State private var step = 0
+    @State private var step: Int
     @State private var name = ""
     @State private var age = ""
     @State private var status = "Single"
@@ -12,6 +12,10 @@ struct OnboardingView: View {
 
     private let lastStep = 4
     private let statuses = ["Single", "Dating", "In a relationship", "It's complicated"]
+
+    init(startStep: Int = 0) {
+        _step = State(initialValue: startStep)
+    }
 
     private var challenge: QuizChallenge {
         MockData.challenges[challengeIndex ?? 3]

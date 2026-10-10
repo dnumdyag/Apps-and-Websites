@@ -121,6 +121,9 @@ enum MiaAI {
             """
         }
         let t = message.text.lowercased()
+        if t.contains("ask her out") || t.contains("ask out") || t.contains("asking her out") {
+            return "That's a great sign. When the chat is fun, that's your moment, so don't wait for a perfect one. Keep it light and specific: \"I'm enjoying this. Let's carry it on over a drink. Are you free Thursday?\" A clear day and place is much easier to say yes to than \"we should meet sometime\". Want help choosing the spot?"
+        }
         if t.contains("nervous") || t.contains("approach") || t.contains("anxiety") {
             return "I hear you. Approach anxiety is completely normal, it's your mind trying to protect you. Let's make it smaller: today, just say hello to one person with no goal at all. What part of approaching feels the scariest for you?"
         }
@@ -130,7 +133,7 @@ enum MiaAI {
         if t.contains("date") {
             return "A great first date is about connection, not perfection. Pick somewhere you can actually talk, keep it to an hour or two, and have a fun second spot in mind if it's going well. Tell me a bit about her, what does she enjoy?"
         }
-        if t.contains("profile") || t.contains("hinge") || t.contains("tinder") || t.contains("bumble") {
+        if t.contains("profile") || t.contains("photo") || t.contains("bio") || t.contains("prompt") || t.contains("matches") {
             return "Your profile is a trailer, not the full movie. Lead with a clear photo where you're smiling, add one that shows your life, and write prompts that are easy to reply to. Share a screenshot and I'll give you specific feedback."
         }
         if t.contains("breakup") || t.contains("my ex") || t.contains("heartbreak") {

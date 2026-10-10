@@ -448,17 +448,22 @@ struct ModuleDetailView: View {
                 VideoPlayer(player: player)
             } else {
                 FillPhoto(name: "mia_hero", height: 210)
-                Color.black.opacity(0.25)
-                VStack(spacing: 10) {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Theme.goldInk)
-                        .frame(width: 60, height: 60)
-                        .background(Theme.goldFill, in: Circle())
+                LinearGradient(colors: [Color(hex: 0x081813, opacity: 0), Color(hex: 0x081813, opacity: 0.8)],
+                               startPoint: .center, endPoint: .bottom)
+                // Kept along the bottom edge so nothing sits on Mia's face.
+                HStack(spacing: 12) {
                     Text("Video lesson with Mia")
                         .font(Theme.sans(13, .semibold))
                         .foregroundStyle(.white)
+                    Spacer()
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Theme.goldInk)
+                        .frame(width: 50, height: 50)
+                        .background(Theme.goldFill, in: Circle())
                 }
+                .padding(16)
+                .frame(maxHeight: .infinity, alignment: .bottom)
             }
         }
         .frame(height: 210)

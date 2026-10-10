@@ -53,6 +53,8 @@ final class AppState: ObservableObject {
     @Published var chatMessages: [ChatMessage] = []
     /// Hidden while typing to Mia so the keyboard has room.
     @Published var hideTabBar = false
+    /// CI screenshot job: `-screen profile` (etc.) opens that one screen. See ScreenshotScreen.
+    @Published var screenshotScreen: String?
 
     @Published var apiKey: String {
         didSet { UserDefaults.standard.set(apiKey, forKey: Self.apiKeyKey) }
@@ -89,6 +91,18 @@ final class AppState: ObservableObject {
                 Calendar.current.date(byAdding: .day, value: -offset, to: today).map { dayKey($0) }
             })
             profile = p
+        }
+        if let i = args.firstIndex(of: "-screen"), i + 1 < args.count {
+            screenshotScreen = args[i + 1]
+            if args[i + 1] == "chat" {
+                selectedTab = .mia
+                let question = ChatMessage(role: .user, text: "We matched on Hinge and the chat is fun, but I don't know how to ask her out.")
+                chatMessages = [
+                    ChatMessage(role: .assistant, text: "Hi James. I'm here whenever you need to talk. What's on your heart today?"),
+                    question,
+                    ChatMessage(role: .assistant, text: MiaAI.offlineReply(for: question)),
+                ]
+            }
         }
         if let i = args.firstIndex(of: "-tab"), i + 1 < args.count {
             switch args[i + 1] {

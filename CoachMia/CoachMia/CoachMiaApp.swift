@@ -30,13 +30,25 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if state.profile.hasOnboarded {
-                MainTabView()
+            #if DEBUG
+            if let screen = state.screenshotScreen {
+                ScreenshotScreen(name: screen)
             } else {
-                OnboardingView()
+                appContent
             }
+            #else
+            appContent
+            #endif
         }
         .animation(.easeInOut(duration: 0.3), value: state.profile.hasOnboarded)
+    }
+
+    @ViewBuilder private var appContent: some View {
+        if state.profile.hasOnboarded {
+            MainTabView()
+        } else {
+            OnboardingView()
+        }
     }
 }
 
