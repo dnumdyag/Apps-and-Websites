@@ -56,6 +56,14 @@ struct MainTabView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !state.hideTabBar {
                 TabPill()
+                    // Fade scrolled content out under the pill so it never shows below it.
+                    .background {
+                        LinearGradient(stops: [.init(color: Theme.background.opacity(0), location: 0),
+                                               .init(color: Theme.background, location: 0.5)],
+                                       startPoint: .top, endPoint: .bottom)
+                            .ignoresSafeArea(edges: .bottom)
+                            .allowsHitTesting(false)
+                    }
             }
         }
     }
