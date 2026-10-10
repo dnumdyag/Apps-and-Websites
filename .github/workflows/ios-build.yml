@@ -1,0 +1,28 @@
+name: iOS build
+
+on:
+  push:
+    paths:
+      - "CoachMia/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: xcodebuild -version
+      - name: Build for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project CoachMia/CoachMia.xcodeproj \
+            -target CoachMia \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            CODE_SIGNING_ALLOWED=NO \
+            | grep -E "error:|warning: .*(deprecated|will never)|BUILD (SUCCEEDED|FAILED)|\*\* " || true
+          test ${PIPESTATUS[0]} -eq 0
