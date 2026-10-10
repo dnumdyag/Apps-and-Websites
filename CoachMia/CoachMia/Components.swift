@@ -373,76 +373,100 @@ struct AnyButtonStyle: ButtonStyle {
 
 // MARK: - Floating tab bar
 
-/// The frosted pill tab bar from the design.
+/// iOS 17 and 18: a hand-built match for Apple's Liquid Glass tab bar (iOS 26 draws the real one).
+/// Bright frosted glass, a grey glass lens that springs between tabs, Apple's filled symbols and system font.
 struct TabPill: View {
     @EnvironmentObject var state: AppState
+    @Namespace private var lens
 
     private struct Item {
         let tab: AppTab
         let title: String
         let icon: String
-        let selectedIcon: String
     }
 
     private let items: [Item] = [
-        Item(tab: .home, title: "Home", icon: "house", selectedIcon: "house.fill"),
-        Item(tab: .journey, title: "Journey", icon: "point.topleft.down.curvedto.point.bottomright.up", selectedIcon: "point.topleft.down.curvedto.point.bottomright.up"),
-        Item(tab: .mia, title: "Mia", icon: "bubble.left", selectedIcon: "bubble.left.fill"),
-        Item(tab: .sessions, title: "Sessions", icon: "play.rectangle", selectedIcon: "play.rectangle.fill"),
-        Item(tab: .community, title: "Community", icon: "person.2", selectedIcon: "person.2.fill"),
+        Item(tab: .home, title: "Home", icon: "house.fill"),
+        Item(tab: .journey, title: "Journey", icon: "point.topleft.down.curvedto.point.bottomright.up"),
+        Item(tab: .mia, title: "Mia", icon: "bubble.left.fill"),
+        Item(tab: .sessions, title: "Sessions", icon: "play.rectangle.fill"),
+        Item(tab: .community, title: "Community", icon: "person.2.fill"),
     ]
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             ForEach(items, id: \.title) { item in
                 let selected = state.selectedTab == item.tab
                 Button {
                     state.selectedTab = item.tab
                 } label: {
                     VStack(spacing: 3) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: selected ? item.selectedIcon : item.icon)
-                                .font(.system(size: 19, weight: .regular))
-                                .frame(height: 24)
-                            if item.tab == .sessions {
-                                Circle()
-                                    .fill(Theme.goldDot)
-                                    .overlay(Circle().stroke(Color(hex: 0xE9F3EE), lineWidth: 1.5))
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 5, y: -2)
-                            }
-                        }
+                        Image(systemName: item.icon)
+                            .font(.system(size: 21, weight: .medium))
+                            .frame(height: 26)
                         Text(item.title)
-                            .font(Theme.sans(10, selected ? .semibold : .medium))
+                            .font(.system(size: 10.5, weight: .semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
-                    .foregroundStyle(selected ? Color(hex: 0x0D1F18) : Color(hex: 0x2B3B34))
-                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .foregroundStyle(selected ? Theme.green : Color(hex: 0x0B1410))
+                    .frame(maxWidth: .infinity, minHeight: 54)
                     .background {
                         if selected {
-                            Capsule()
-                                .fill(LinearGradient(colors: [.white.opacity(0.92), .white.opacity(0.62)],
-                                                     startPoint: .top, endPoint: .bottom))
-                                .shadow(color: Theme.ink.opacity(0.14), radius: 3, y: 2)
+                            GlassLens().matchedGeometryEffect(id: "lens", in: lens)
                         }
                     }
                     .contentShape(Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(GlassPressStyle())
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
+        // Only the lens animates; the screens themselves switch instantly, as in Apple's tab bar.
+        .animation(.spring(response: 0.42, dampingFraction: 0.74), value: state.selectedTab)
         .padding(4)
-        .background {
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay(Capsule().fill(Color(hex: 0xCDE5D8, opacity: 0.7)))
-                .overlay(Capsule().stroke(.white.opacity(0.75), lineWidth: 1))
-                .shadow(color: Theme.ink.opacity(0.2), radius: 20, y: 12)
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 4)
+        .background { GlassSurface(shape: Capsule()) }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 2)
+    }
+}
+
+/// Our closest match to Liquid Glass before iOS 26: frosted blur, a milky glossy body,
+/// a bright specular rim catching light from above, and a soft lifted shadow.
+struct GlassSurface<S: InsettableShape>: View {
+    let shape: S
+
+    var body: some View {
+        shape
+            .fill(.ultraThinMaterial)
+            .overlay(shape.fill(LinearGradient(colors: [.white.opacity(0.78), .white.opacity(0.58), .white.opacity(0.66)],
+                                               startPoint: .top, endPoint: .bottom)))
+            .overlay(shape.strokeBorder(LinearGradient(colors: [.white, .white.opacity(0.35), .white.opacity(0.8)],
+                                                       startPoint: .top, endPoint: .bottom), lineWidth: 1.2))
+            .overlay(shape.stroke(Color.black.opacity(0.05), lineWidth: 0.5))
+            .shadow(color: Color(hex: 0x0B1410, opacity: 0.10), radius: 24, y: 10)
+            .shadow(color: Color(hex: 0x0B1410, opacity: 0.05), radius: 2, y: 1)
+    }
+}
+
+/// The grey glass lens behind the selected tab.
+private struct GlassLens: View {
+    var body: some View {
+        Capsule()
+            .fill(Color(hex: 0x0B1410, opacity: 0.075))
+            .overlay(Capsule().fill(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0)],
+                                                   startPoint: .top, endPoint: .center)))
+            .overlay(Capsule().strokeBorder(LinearGradient(colors: [.white.opacity(0.9), .white.opacity(0.15)],
+                                                           startPoint: .top, endPoint: .bottom), lineWidth: 1))
+    }
+}
+
+/// Glass swells slightly under the finger, like Apple's interactive glass.
+private struct GlassPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 1.07 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 

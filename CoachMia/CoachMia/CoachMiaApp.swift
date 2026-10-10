@@ -90,10 +90,12 @@ private struct PillTabView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !state.hideTabBar {
                 TabPill()
-                    // Fade scrolled content out under the pill so it never shows below it.
+                    // Content stays faintly visible through the glass, then fades out by the bar's
+                    // bottom edge so nothing shows below it (like Apple's scroll edge effect).
                     .background {
                         LinearGradient(stops: [.init(color: Theme.background.opacity(0), location: 0),
-                                               .init(color: Theme.background, location: 0.5)],
+                                               .init(color: Theme.background.opacity(0.5), location: 0.5),
+                                               .init(color: Theme.background, location: 0.64)],
                                        startPoint: .top, endPoint: .bottom)
                             .ignoresSafeArea(edges: .bottom)
                             .allowsHitTesting(false)
