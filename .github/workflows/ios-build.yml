@@ -17,12 +17,14 @@ jobs:
         run: xcodebuild -version
       - name: Build for iOS Simulator
         run: |
-          set -o pipefail
+          set +e
           xcodebuild build \
             -project CoachMia/CoachMia.xcodeproj \
             -target CoachMia \
             -configuration Debug \
             -sdk iphonesimulator \
-            CODE_SIGNING_ALLOWED=NO \
-            | grep -E "error:|warning: .*(deprecated|will never)|BUILD (SUCCEEDED|FAILED)|\*\* " || true
-          test ${PIPESTATUS[0]} -eq 0
+            CODE_SIGNING_ALLOWED=NO > build.log 2>&1
+          status=$?
+          grep -E "error:|BUILD (SUCCEEDED|FAILED)" build.log | sort -u
+          [ $status -ne 0 ] && tail -40 build.log
+          exit $status
