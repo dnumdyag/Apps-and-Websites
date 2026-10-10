@@ -30,7 +30,7 @@ struct Post: Identifiable, Codable, Hashable {
 }
 
 enum SessionKind: String {
-    case live = "Live Session"
+    case live = "Live session"
     case webinar = "Webinar"
     case groupCall = "Group Q&A"
 }
@@ -39,6 +39,7 @@ struct LiveSession: Identifiable {
     let id: Int
     let title: String
     let host: String
+    let image: String
     let date: String
     let time: String
     let kind: SessionKind
@@ -63,6 +64,7 @@ struct Recording: Identifiable {
     let id: Int
     let title: String
     let host: String
+    let image: String
     let duration: String
     let date: String
 }
@@ -71,9 +73,9 @@ struct Coach: Identifiable {
     let id: Int
     let name: String
     let specialty: String
+    let image: String
     let price: Int
     let sessions: Int
-    let isMia: Bool
 }
 
 struct Retreat: Identifiable {
@@ -81,8 +83,15 @@ struct Retreat: Identifiable {
     let title: String
     let location: String
     let dates: String
+    let image: String
     let price: Int
     let spots: Int
+}
+
+struct QuizChallenge {
+    let label: String
+    let moduleID: Int
+    let blindSpot: String
 }
 
 enum MockData {
@@ -90,7 +99,7 @@ enum MockData {
 
     static let miaMessages = [
         ("You're exactly where you need to be",
-         "Growth isn't about perfection, it's about showing up for yourself with kindness. Take a breath. You're doing beautifully."),
+         "Growth isn't about perfection. It's about showing up for yourself with kindness. Take a breath. You're doing beautifully."),
         ("Confidence is built, not found",
          "Every small brave action is a deposit. Today, make one tiny deposit and notice how it feels."),
         ("Be curious, not impressive",
@@ -127,12 +136,12 @@ enum MockData {
         Module(id: 5, title: "First Date Excellence", subtitle: "Planning & execution", minutes: 16,
                summary: "Choose a place where you can talk, keep it short and fun, and leave her wanting more.",
                keyPoints: ["Pick a venue with good energy", "Plan a 'second location' option", "End on a high"],
-               exercise: "Plan a first date idea using the Date Planner prompt in Mia chat."),
+               exercise: "Plan a first date idea with Mia."),
         Module(id: 6, title: "Texting & Calling", subtitle: "Between date communication", minutes: 11,
                summary: "Texting is for logistics and playful connection, not for deep conversations. Get to the date.",
                keyPoints: ["Match her energy", "Use texts to build anticipation", "Call when it matters"],
                exercise: "Review a recent text thread with Mia."),
-        Module(id: 7, title: "Physical Escalation", subtitle: "Touch, connection & consent", minutes: 13,
+        Module(id: 7, title: "Physical Escalation", subtitle: "Touch, kissing & intimacy", minutes: 13,
                summary: "Respectful, gradual, and always tuned in to her comfort. Consent is attractive.",
                keyPoints: ["Read signals, then check in", "Start small and natural", "Respect a no gracefully"],
                exercise: "Reflect on how you show warmth non-verbally."),
@@ -143,7 +152,7 @@ enum MockData {
     ]
 
     static let groups: [CommunityGroup] = [
-        CommunityGroup(id: 1, name: "Heartbreak & Healing", description: "Support for moving forward stronger", members: 1247, icon: "heart.text.square"),
+        CommunityGroup(id: 1, name: "Heartbreak & Healing", description: "Support for moving forward stronger", members: 1247, icon: "heart"),
         CommunityGroup(id: 2, name: "Dating App Success", description: "Profile optimization & strategies", members: 2103, icon: "iphone"),
         CommunityGroup(id: 3, name: "Approaching Women", description: "Real-world practice & courage", members: 1876, icon: "figure.walk"),
         CommunityGroup(id: 4, name: "Conversation Masters", description: "Creating authentic connection", members: 1534, icon: "bubble.left.and.bubble.right"),
@@ -165,10 +174,10 @@ enum MockData {
     ]
 
     static let liveSessions: [LiveSession] = [
-        LiveSession(id: 1, title: "Confidence Mastery Workshop", host: "Mia", date: "Today", time: "8:00 PM", kind: .live, attendees: 23, maxAttendees: 30),
-        LiveSession(id: 2, title: "Dating App Profile Reviews", host: "Alex Turner", date: "Tomorrow", time: "7:00 PM", kind: .webinar, attendees: 67, maxAttendees: 100),
-        LiveSession(id: 3, title: "Monthly Group Q&A with Mia", host: "Mia", date: "Thu", time: "6:30 PM", kind: .groupCall, attendees: 45, maxAttendees: 75),
-        LiveSession(id: 4, title: "First Date Strategies", host: "David Chen", date: "Sat", time: "11:00 AM", kind: .webinar, attendees: 38, maxAttendees: 100),
+        LiveSession(id: 1, title: "Confidence Mastery Workshop", host: "Marcus Rodriguez", image: "coach_marcus", date: "Today", time: "8:00 PM", kind: .live, attendees: 23, maxAttendees: 30),
+        LiveSession(id: 2, title: "Dating App Profile Reviews", host: "Alex Turner", image: "coach_alex", date: "Tomorrow", time: "7:00 PM", kind: .webinar, attendees: 67, maxAttendees: 100),
+        LiveSession(id: 3, title: "Q&A: First Date Strategies", host: "David Chen", image: "coach_david", date: "Thu", time: "6:30 PM", kind: .webinar, attendees: 45, maxAttendees: 75),
+        LiveSession(id: 4, title: "Monthly Group Q&A with Mia", host: "Mia", image: "mia_avatar", date: "Sat", time: "11:00 AM", kind: .groupCall, attendees: 38, maxAttendees: 100),
     ]
 
     static let eventThemes = ["All", "Sports", "Drinks", "Cigars", "Networking", "Social"]
@@ -177,37 +186,37 @@ enum MockData {
         MemberEvent(id: 1, title: "Members' Football Night", theme: "Sports", venue: "The Sporting Club", city: "Miami", date: "Fri, Oct 17", time: "7:00 PM", spotsLeft: 8, price: 0, icon: "sportscourt"),
         MemberEvent(id: 2, title: "Whisky & Conversation", theme: "Drinks", venue: "The Gilded Bar", city: "Miami", date: "Sat, Oct 18", time: "8:00 PM", spotsLeft: 4, price: 35, icon: "wineglass"),
         MemberEvent(id: 3, title: "Cigar Lounge Evening", theme: "Cigars", venue: "Havana Room", city: "Miami", date: "Thu, Oct 23", time: "7:30 PM", spotsLeft: 6, price: 45, icon: "flame"),
-        MemberEvent(id: 4, title: "Founders & Friends Mixer", theme: "Networking", venue: "Soho Works", city: "Miami", date: "Tue, Oct 28", time: "6:30 PM", spotsLeft: 20, price: 0, icon: "person.3"),
+        MemberEvent(id: 4, title: "Founders & Friends Mixer", theme: "Networking", venue: "The Collective", city: "Miami", date: "Tue, Oct 28", time: "6:30 PM", spotsLeft: 20, price: 0, icon: "person.3"),
         MemberEvent(id: 5, title: "Sunday Brunch Social", theme: "Social", venue: "Riverside Kitchen", city: "Miami", date: "Sun, Nov 2", time: "11:30 AM", spotsLeft: 12, price: 25, icon: "cup.and.saucer"),
         MemberEvent(id: 6, title: "Padel & Pints", theme: "Sports", venue: "Padel Social Club", city: "Miami", date: "Sat, Nov 8", time: "2:00 PM", spotsLeft: 3, price: 20, icon: "figure.tennis"),
     ]
 
     static let recordings: [Recording] = [
-        Recording(id: 1, title: "Overcoming Approach Anxiety", host: "Mia", duration: "1:32:45", date: "Oct 3"),
-        Recording(id: 2, title: "Authentic Conversation Techniques", host: "David Chen", duration: "1:18:20", date: "Sep 28"),
-        Recording(id: 3, title: "Building Emotional Intelligence", host: "Dr. Sarah Thompson", duration: "1:45:15", date: "Sep 21"),
+        Recording(id: 1, title: "Overcoming Approach Anxiety", host: "Marcus Rodriguez", image: "coach_marcus", duration: "1h 32m", date: "Oct 3"),
+        Recording(id: 2, title: "Authentic Conversation Techniques", host: "David Chen", image: "coach_david", duration: "1h 18m", date: "Sep 28"),
+        Recording(id: 3, title: "Building Emotional Intelligence", host: "Dr. Sarah Thompson", image: "coach_sarah", duration: "1h 45m", date: "Sep 21"),
     ]
 
     static let coaches: [Coach] = [
-        Coach(id: 0, name: "Mia", specialty: "Founder · Dating & Relationships", price: 200, sessions: 2310, isMia: true),
-        Coach(id: 1, name: "Marcus Rodriguez", specialty: "Confidence & Mindset", price: 150, sessions: 1247, isMia: false),
-        Coach(id: 2, name: "Alex Turner", specialty: "Dating Apps & Online", price: 130, sessions: 1534, isMia: false),
-        Coach(id: 3, name: "David Chen", specialty: "Social Dynamics", price: 120, sessions: 892, isMia: false),
+        Coach(id: 0, name: "Mia", specialty: "Founder · Dating & Relationships", image: "mia_avatar", price: 200, sessions: 2310),
+        Coach(id: 1, name: "Marcus Rodriguez", specialty: "Confidence & Mindset", image: "coach_marcus", price: 150, sessions: 1247),
+        Coach(id: 2, name: "Alex Turner", specialty: "Dating Apps & Online", image: "coach_alex", price: 130, sessions: 1534),
+        Coach(id: 3, name: "David Chen", specialty: "Social Dynamics", image: "coach_david", price: 120, sessions: 892),
     ]
 
     static let timeSlots = ["9:00 AM", "11:00 AM", "1:00 PM", "3:00 PM", "6:00 PM", "8:00 PM"]
 
     static let retreats: [Retreat] = [
-        Retreat(id: 1, title: "Confidence & Connection Intensive", location: "Ibiza, Spain", dates: "April 10-13, 2027", price: 2499, spots: 3),
-        Retreat(id: 2, title: "Social Mastery Immersion", location: "Miami, Florida", dates: "May 15-18, 2027", price: 2799, spots: 5),
+        Retreat(id: 1, title: "Confidence & Connection Intensive", location: "Sedona, Arizona", dates: "April 10 to 13, 2027", image: "retreat_sedona", price: 2499, spots: 3),
+        Retreat(id: 2, title: "Social Mastery Immersion", location: "Miami, Florida", dates: "May 15 to 18, 2027", image: "retreat_miami", price: 2799, spots: 5),
     ]
 
     static let premiumFeatures = [
-        "Unlimited Coach Mia AI conversations",
+        "Unlimited AI Coach conversations",
         "All learning modules unlocked",
-        "Priority access to live sessions & events",
+        "Priority access to live sessions",
         "Private community groups",
-        "Monthly group Q&A with Mia",
+        "Weekly 1:1 check-ins",
         "Exclusive retreat invitations",
     ]
 
@@ -220,11 +229,11 @@ enum MockData {
         "Improve my relationship",
     ]
 
-    static let challenges: [(label: String, moduleID: Int)] = [
-        ("Approaching & starting conversations", 3),
-        ("Getting matches on apps", 4),
-        ("Turning chats into dates", 6),
-        ("Feeling confident in myself", 1),
-        ("Making relationships last", 8),
+    static let challenges: [QuizChallenge] = [
+        QuizChallenge(label: "Approaching & starting conversations", moduleID: 3, blindSpot: "Waiting for the perfect moment"),
+        QuizChallenge(label: "Getting matches on apps", moduleID: 4, blindSpot: "Hiding the real you online"),
+        QuizChallenge(label: "Turning chats into dates", moduleID: 6, blindSpot: "Staying in the chat too long"),
+        QuizChallenge(label: "Feeling confident in myself", moduleID: 1, blindSpot: "Looking for approval before self-worth"),
+        QuizChallenge(label: "Making relationships last", moduleID: 8, blindSpot: "Avoiding the hard conversations"),
     ]
 }

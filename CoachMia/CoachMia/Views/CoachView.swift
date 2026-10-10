@@ -4,7 +4,6 @@ import PhotosUI
 struct CoachView: View {
     @EnvironmentObject var state: AppState
 
-    @State private var messages: [ChatMessage] = []
     @State private var input = ""
     @State private var isTyping = false
     @State private var attachedImage: Data?
@@ -16,7 +15,7 @@ struct CoachView: View {
     private let quickPrompts = [
         "I'm feeling nervous about approaching",
         "I'd like support with texting",
-        "Help me plan a first date",
+        "First date thoughts",
         "Growing my confidence",
     ]
 
@@ -25,24 +24,32 @@ struct CoachView: View {
             header
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 14) {
-                        ForEach(messages) { message in
-                            bubble(message)
-                                .id(message.id)
+                    VStack(spacing: 10) {
+                        Text("Today")
+                            .font(Theme.sans(11.5, .semibold))
+                            .foregroundStyle(Color(hex: 0x3F4C45))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Theme.pill, in: Capsule())
+                            .padding(.bottom, 6)
+
+                        ForEach(state.chatMessages) { message in
+                            bubble(message).id(message.id)
                         }
                         if isTyping {
                             typingIndicator.id("typing")
                         }
-                        if messages.count <= 1 {
+                        if state.chatMessages.count <= 1 && !isTyping {
                             quickPromptSection
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 18)
+                    .padding(.bottom, 12)
                 }
                 .scrollDismissesKeyboard(.interactively)
-                .onChange(of: messages.count) { _, _ in
-                    if let id = messages.last?.id {
+                .onChange(of: state.chatMessages.count) { _, _ in
+                    if let id = state.chatMessages.last?.id {
                         withAnimation { proxy.scrollTo(id, anchor: .bottom) }
                     }
                 }
@@ -52,7 +59,7 @@ struct CoachView: View {
             }
             inputBar
         }
-        .miaBackground()
+        .screenBackground()
         .photosPicker(isPresented: $showPicker, selection: $pickerItem, matching: .images)
         .onChange(of: pickerItem) { _, item in
             guard let item else { return }
@@ -63,12 +70,16 @@ struct CoachView: View {
                 pickerItem = nil
             }
         }
+        .onChange(of: inputFocused) { _, focused in
+            withAnimation(.easeOut(duration: 0.2)) { state.hideTabBar = focused }
+        }
         .onAppear {
-            if messages.isEmpty {
-                messages = [ChatMessage(role: .assistant, text: "Hi \(state.firstName). I'm here whenever you need to talk. What's on your heart today?")]
+            if state.chatMessages.isEmpty {
+                state.chatMessages = [ChatMessage(role: .assistant, text: "Hi \(state.firstName). I'm here whenever you need to talk. What's on your heart today?")]
             }
             consumePendingPrompt()
         }
+        .onDisappear { state.hideTabBar = false }
         .onChange(of: state.pendingMiaPrompt) { _, _ in consumePendingPrompt() }
         .sheet(isPresented: $showUpgrade) { MembershipView().environmentObject(state) }
     }
@@ -76,38 +87,50 @@ struct CoachView: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(spacing: 14) {
-            MiaAvatar(size: 46)
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 12) {
+            ZStack(alignment: .bottomTrailing) {
+                RoundPhoto(name: "mia_avatar", size: 50)
+                Circle()
+                    .fill(Theme.online)
+                    .frame(width: 13, height: 13)
+                    .overlay(Circle().stroke(Theme.surface, lineWidth: 2.5))
+            }
+            VStack(alignment: .leading, spacing: 3) {
                 Text("Mia")
-                    .font(.system(size: 22, weight: .light))
-                    .foregroundStyle(Theme.text)
-                HStack(spacing: 6) {
-                    Circle().fill(Color.green.opacity(0.7)).frame(width: 7, height: 7)
-                    Text("Here whenever you need")
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Theme.textMuted)
-                }
+                    .font(Theme.serif(28, .semibold))
+                    .foregroundStyle(Theme.ink)
+                Text("AI coach · Here whenever you need")
+                    .font(Theme.sans(12.5))
+                    .foregroundStyle(Theme.muted)
             }
             Spacer()
-            if state.profile.isPremium {
-                Pill(text: "Unlimited")
-            } else {
-                Pill(text: "\(state.aiMessagesLeft) left this month", tint: Theme.textSoft)
+            if !state.profile.isPremium {
+                Text("\(state.aiMessagesLeft) left")
+                    .font(Theme.sans(11.5, .semibold))
+                    .foregroundStyle(Theme.goldText)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Theme.pill, in: Capsule())
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .background(Theme.bgTop.opacity(0.85))
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.border.opacity(0.35)).frame(height: 1)
-        }
+        .padding(.horizontal, 24)
+        .padding(.top, 10)
+        .padding(.bottom, 16)
+        .background(Theme.surface.ignoresSafeArea(edges: .top))
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.divider).frame(height: 1) }
     }
 
     // MARK: Messages
 
     private func bubble(_ message: ChatMessage) -> some View {
         let isUser = message.role == .user
+        let shape = UnevenRoundedRectangle(
+            topLeadingRadius: 20,
+            bottomLeadingRadius: isUser ? 20 : 6,
+            bottomTrailingRadius: isUser ? 6 : 20,
+            topTrailingRadius: 20,
+            style: .continuous
+        )
         return HStack {
             if isUser { Spacer(minLength: 50) }
             VStack(alignment: .leading, spacing: 10) {
@@ -120,22 +143,15 @@ struct CoachView: View {
                 }
                 if !message.text.isEmpty {
                     Text(message.text)
-                        .font(.system(size: 15, weight: isUser ? .regular : .light))
+                        .font(Theme.sans(15))
                         .lineSpacing(3)
-                        .foregroundStyle(isUser ? Theme.bgTop : Theme.text)
+                        .foregroundStyle(isUser ? Theme.onGreen : Theme.ink)
                         .textSelection(.enabled)
                 }
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
-            .background(
-                isUser ? AnyShapeStyle(Theme.goldFill) : AnyShapeStyle(Theme.cardFill),
-                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(Theme.border.opacity(isUser ? 0 : 0.3))
-            )
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
+            .background(isUser ? Theme.green : Theme.surface, in: shape)
             if !isUser { Spacer(minLength: 50) }
         }
     }
@@ -145,19 +161,18 @@ struct CoachView: View {
             TypingDots()
                 .padding(.horizontal, 18)
                 .padding(.vertical, 16)
-                .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .background(Theme.surface, in: UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 6,
+                                                                      bottomTrailingRadius: 20, topTrailingRadius: 20))
             Spacer()
         }
     }
 
     private var quickPromptSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("If you'd like")
-                .font(.system(size: 12, weight: .light))
-                .foregroundStyle(Theme.textMuted)
+            SectionLabel("If you'd like")
             FlowLayout {
                 ForEach(quickPrompts, id: \.self) { prompt in
-                    Button(prompt) { input = prompt; inputFocused = true }
+                    Button(prompt) { send(prompt) }
                         .buttonStyle(ChipButtonStyle())
                 }
                 Button {
@@ -177,7 +192,7 @@ struct CoachView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 8)
+        .padding(.top, 16)
     }
 
     // MARK: Input
@@ -185,61 +200,64 @@ struct CoachView: View {
     private var inputBar: some View {
         VStack(spacing: 10) {
             if let data = attachedImage, let image = UIImage(data: data) {
-                HStack {
+                HStack(spacing: 12) {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 56, height: 56)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(alignment: .topTrailing) {
-                            Button {
-                                attachedImage = nil
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(Theme.text, Theme.bgTop)
-                            }
-                            .offset(x: 6, y: -6)
-                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     Text("Screenshot attached")
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Theme.textMuted)
+                        .font(Theme.sans(12.5, .medium))
+                        .foregroundStyle(Theme.muted)
                     Spacer()
+                    Button {
+                        attachedImage = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(Theme.faint)
+                    }
+                    .accessibilityLabel("Remove screenshot")
                 }
             }
             HStack(alignment: .bottom, spacing: 10) {
-                Button {
-                    showPicker = true
-                } label: {
-                    Image(systemName: "photo.badge.plus")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
-                        .frame(width: 44, height: 44)
-                        .background(Theme.chip.opacity(0.5), in: Circle())
+                HStack(alignment: .bottom, spacing: 0) {
+                    TextField("", text: $input, prompt: Text("Share what's on your heart...").foregroundColor(Theme.faint), axis: .vertical)
+                        .lineLimit(1...5)
+                        .focused($inputFocused)
+                        .font(Theme.sans(15))
+                        .foregroundStyle(Theme.ink)
+                        .padding(.leading, 20)
+                        .padding(.vertical, 14)
+                    Button {
+                        showPicker = true
+                    } label: {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.system(size: 19))
+                            .foregroundStyle(Theme.muted)
+                            .frame(width: 44, height: 44)
+                    }
+                    .padding(4)
+                    .accessibilityLabel("Attach a screenshot")
                 }
-                TextField("", text: $input, prompt: Text("Share what's on your heart...").foregroundColor(Theme.textMuted), axis: .vertical)
-                    .lineLimit(1...5)
-                    .focused($inputFocused)
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundStyle(Theme.text)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Theme.chip.opacity(0.5), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.border.opacity(0.35)))
-                Button(action: send) {
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Theme.outline, lineWidth: 1.5))
+
+                Button { send() } label: {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Theme.bgTop)
-                        .frame(width: 44, height: 44)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(Theme.goldInk)
+                        .frame(width: 52, height: 52)
                         .background(Theme.goldFill, in: Circle())
                 }
                 .disabled(!canSend)
-                .opacity(canSend ? 1 : 0.4)
+                .opacity(canSend ? 1 : 0.5)
+                .accessibilityLabel("Send")
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 10)
-        .background(Theme.bgBottom.opacity(0.95))
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
     }
 
     private var canSend: Bool {
@@ -253,7 +271,8 @@ struct CoachView: View {
         }
     }
 
-    private func send() {
+    private func send(_ preset: String? = nil) {
+        if let preset { input = preset }
         guard canSend else { return }
         if !state.profile.isPremium && state.aiMessagesLeft == 0 {
             showUpgrade = true
@@ -262,13 +281,13 @@ struct CoachView: View {
         let message = ChatMessage(role: .user,
                                   text: input.trimmingCharacters(in: .whitespacesAndNewlines),
                                   imageData: attachedImage)
-        messages.append(message)
+        state.chatMessages.append(message)
         input = ""
         attachedImage = nil
         isTyping = true
         state.recordAIMessage()
 
-        let history = messages
+        let history = state.chatMessages
         let apiKey = state.apiKey
         let name = state.firstName
         let goals = state.profile.goals
@@ -280,7 +299,7 @@ struct CoachView: View {
                 replyText = "Sorry, I couldn't connect just now (\(error.localizedDescription)). Please try again in a moment."
             }
             isTyping = false
-            messages.append(ChatMessage(role: .assistant, text: replyText))
+            state.chatMessages.append(ChatMessage(role: .assistant, text: replyText))
         }
     }
 }
@@ -289,13 +308,13 @@ private struct TypingDots: View {
     @State private var animating = false
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             ForEach(0..<3, id: \.self) { i in
                 Circle()
-                    .fill(Theme.textSoft)
+                    .fill([Theme.green, Color(hex: 0x6FA08C), Color(hex: 0xB5CFC3)][i])
                     .frame(width: 7, height: 7)
-                    .opacity(animating ? 0.9 : 0.25)
-                    .animation(.easeInOut(duration: 0.6).repeatForever().delay(Double(i) * 0.2), value: animating)
+                    .offset(y: animating ? -3 : 2)
+                    .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.15), value: animating)
             }
         }
         .onAppear { animating = true }

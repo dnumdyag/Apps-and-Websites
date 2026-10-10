@@ -5,7 +5,7 @@ struct SessionsView: View {
     @EnvironmentObject var state: AppState
 
     enum Segment: String, CaseIterable {
-        case upcoming = "Live"
+        case upcoming = "Upcoming"
         case events = "Events"
         case recordings = "Recordings"
     }
@@ -18,27 +18,22 @@ struct SessionsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    ScreenHeader(title: "Sessions", subtitle: "Join when it feels right for you")
-
-                    Picker("", selection: $segment) {
-                        ForEach(Segment.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
+                VStack(alignment: .leading, spacing: 22) {
+                    ScreenHeader(title: "Live ", accent: "sessions", subtitle: "Join when it feels right for you")
+                    segmentPicker
 
                     switch segment {
-                    case .upcoming:
-                        ForEach(MockData.liveSessions) { liveCard($0) }
-                    case .events:
-                        eventsSection
-                    case .recordings:
-                        ForEach(MockData.recordings) { recordingCard($0) }
+                    case .upcoming: upcomingSection
+                    case .events: eventsSection
+                    case .recordings: recordingsSection
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 32)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
             }
-            .miaBackground()
+            .screenBackground()
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $playing) { recording in
                 RecordingPlayerView(recording: recording)
             }
@@ -50,59 +45,145 @@ struct SessionsView: View {
         }
     }
 
-    // MARK: Live sessions
-
-    private func liveCard(_ session: LiveSession) -> some View {
-        let reserved = state.profile.reservedSessions.contains(session.id)
-        let spotsLeft = session.maxAttendees - session.attendees
-        let tint: Color = session.kind == .live ? Color(hex: 0x93C5FD) : session.kind == .webinar ? Color(hex: 0xD8B4FE) : Theme.gold
-
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 8) {
-                Pill(text: session.kind.rawValue, tint: tint)
-                if spotsLeft < 10 { Pill(text: "Almost full", tint: Color(hex: 0xFDBA74)) }
-            }
-            VStack(alignment: .leading, spacing: 6) {
-                Text(session.title)
-                    .font(.system(size: 19, weight: .light))
-                    .foregroundStyle(Theme.text)
-                Text("with \(session.host)")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Theme.textSoft)
-            }
-            HStack(spacing: 16) {
-                Label(session.date, systemImage: "calendar")
-                Label(session.time, systemImage: "clock")
-                Label("\(session.attendees + (reserved ? 1 : 0)) joining", systemImage: "person.2")
-            }
-            .font(.system(size: 12, weight: .light))
-            .foregroundStyle(Theme.textMuted)
-
-            Button {
-                withAnimation {
-                    if reserved { _ = state.profile.reservedSessions.remove(session.id) }
-                    else { _ = state.profile.reservedSessions.insert(session.id) }
+    private var segmentPicker: some View {
+        HStack(spacing: 4) {
+            ForEach(Segment.allCases, id: \.self) { s in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { segment = s }
+                } label: {
+                    Text(s.rawValue)
+                        .font(Theme.sans(14, .semibold))
+                        .foregroundStyle(segment == s ? Theme.onGreen : Theme.muted)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(segment == s ? Theme.green : Color.clear, in: Capsule())
+                        .contentShape(Capsule())
                 }
-            } label: {
-                Label(reserved ? "You're in. We'll remind you." : "Join this session",
-                      systemImage: reserved ? "checkmark" : "video")
+                .buttonStyle(.plain)
             }
-            .buttonStyle(reserved ? AnyButtonStyle(SoftButtonStyle()) : AnyButtonStyle(GoldButtonStyle()))
         }
-        .miaCard()
+        .padding(4)
+        .background(Theme.surface, in: Capsule())
     }
 
-    // MARK: In-person member events
+    private func isReserved(_ session: LiveSession) -> Bool {
+        state.profile.reservedSessions.contains(session.id)
+    }
+
+    private func toggle(_ session: LiveSession) {
+        withAnimation {
+            if isReserved(session) { _ = state.profile.reservedSessions.remove(session.id) }
+            else { _ = state.profile.reservedSessions.insert(session.id) }
+        }
+    }
+
+    // MARK: Upcoming
+
+    private var upcomingSection: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            featuredCard(MockData.liveSessions[0])
+            VStack(alignment: .leading, spacing: 12) {
+                SectionLabel("Coming up")
+                ForEach(MockData.liveSessions.dropFirst()) { session in
+                    smallSessionCard(session)
+                }
+            }
+        }
+    }
+
+    private func featuredCard(_ session: LiveSession) -> some View {
+        let reserved = isReserved(session)
+        let joining = session.attendees + (reserved ? 1 : 0)
+        let spotsLeft = session.maxAttendees - joining
+        return VStack(alignment: .leading, spacing: 0) {
+            ZStack(alignment: .top) {
+                FillPhoto(name: session.image, height: 190)
+                HStack {
+                    PhotoBadge(text: "\(session.date) · \(session.time)", dot: Color(hex: 0xF08A6E))
+                    Spacer()
+                    if spotsLeft < 10 {
+                        PhotoBadge(text: "Almost full", color: Color(hex: 0xF3D9A0))
+                    }
+                }
+                .padding(14)
+            }
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionLabel(session.kind.rawValue, color: Theme.goldText)
+                    Text(session.title)
+                        .font(Theme.serif(28, .semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text("with \(session.host)")
+                        .font(Theme.sans(14))
+                        .foregroundStyle(Theme.muted)
+                }
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("\(joining) others joining").foregroundStyle(Theme.muted)
+                        Spacer()
+                        Text("\(spotsLeft) spots left").foregroundStyle(Theme.goldText)
+                    }
+                    .font(Theme.sans(12.5, .semibold))
+                    ProgressLine(value: Double(joining) / Double(session.maxAttendees), height: 6)
+                }
+                if reserved {
+                    Button { toggle(session) } label: {
+                        Label("You're in · \(session.date) · \(session.time)", systemImage: "checkmark")
+                    }
+                    .buttonStyle(OutlineButtonStyle(fullWidth: true, height: 52))
+                } else {
+                    Button { toggle(session) } label: {
+                        Label("Join this session", systemImage: "video")
+                    }
+                    .buttonStyle(GoldButtonStyle())
+                }
+            }
+            .padding(20)
+        }
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+
+    private func smallSessionCard(_ session: LiveSession) -> some View {
+        let reserved = isReserved(session)
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 14) {
+                FillPhoto(name: session.image, height: 64, width: 64, radius: 16)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.kind.rawValue.uppercased())
+                        .font(Theme.sans(10, .semibold))
+                        .tracking(2)
+                        .foregroundStyle(Theme.goldText)
+                    Text(session.title)
+                        .font(Theme.serif(21, .semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text("with \(session.host)")
+                        .font(Theme.sans(12.5))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            HStack {
+                Label("\(session.date) · \(session.time)", systemImage: "calendar")
+                    .font(Theme.sans(13.5, .medium))
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                Button(reserved ? "Reserved" : "Reserve") { toggle(session) }
+                    .buttonStyle(reserved ? AnyButtonStyle(ChipButtonStyle(selected: true)) : AnyButtonStyle(OutlineButtonStyle()))
+            }
+        }
+        .whiteCard(padding: 16)
+    }
+
+    // MARK: Member events
 
     private var filteredEvents: [MemberEvent] {
         theme == "All" ? MockData.memberEvents : MockData.memberEvents.filter { $0.theme == theme }
     }
 
     private var eventsSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Exclusive in-person events for members. Meet like-minded men, build your social circle and practise in real life.")
-                .font(.system(size: 14, weight: .light))
-                .foregroundStyle(Theme.textSoft)
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Exclusive in-person evenings for members. Meet like-minded men, grow your circle and practise in real life.")
+                .font(Theme.sans(14))
+                .foregroundStyle(Theme.muted)
                 .lineSpacing(3)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -112,6 +193,7 @@ struct SessionsView: View {
                             .buttonStyle(ChipButtonStyle(selected: theme == t))
                     }
                 }
+                .padding(.vertical, 1)
             }
 
             ForEach(filteredEvents) { event in
@@ -122,70 +204,88 @@ struct SessionsView: View {
 
     private func eventCard(_ event: MemberEvent) -> some View {
         let booked = state.profile.bookedEvents.contains(event.id)
-        return VStack(alignment: .leading, spacing: 16) {
+        return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 14) {
-                IconBubble(systemName: event.icon, size: 44)
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        Pill(text: event.theme)
-                        if event.spotsLeft <= 5 { Pill(text: "\(event.spotsLeft) spots left", tint: Color(hex: 0xFDBA74)) }
-                    }
+                Image(systemName: event.icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(Theme.goldOnGreen)
+                    .frame(width: 52, height: 52)
+                    .background(Theme.green, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(event.theme.uppercased())
+                        .font(Theme.sans(10, .semibold))
+                        .tracking(2)
+                        .foregroundStyle(Theme.goldText)
                     Text(event.title)
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.text)
+                        .font(Theme.serif(21, .semibold))
+                        .foregroundStyle(Theme.ink)
                     Text("\(event.venue) · \(event.city)")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
+                        .font(Theme.sans(12.5))
+                        .foregroundStyle(Theme.muted)
+                }
+                Spacer(minLength: 0)
+                if event.spotsLeft <= 5 {
+                    Text("\(event.spotsLeft) left")
+                        .font(Theme.sans(11, .semibold))
+                        .foregroundStyle(Theme.red)
                 }
             }
-            HStack(spacing: 16) {
-                Label(event.date, systemImage: "calendar")
-                Label(event.time, systemImage: "clock")
+            HStack {
+                Label("\(event.date) · \(event.time)", systemImage: "calendar")
+                    .font(Theme.sans(13.5, .medium))
+                    .foregroundStyle(Theme.ink)
                 Spacer()
-                Text(event.price == 0 ? "Included" : "\(Config.currency)\(event.price)")
-                    .foregroundStyle(Theme.gold)
-            }
-            .font(.system(size: 12, weight: .light))
-            .foregroundStyle(Theme.textMuted)
-
-            if booked {
-                Label("You're going", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Theme.gold)
-            } else {
-                Button("Reserve my spot") { eventToBook = event }
-                    .buttonStyle(GoldButtonStyle())
+                if booked {
+                    Label("Going", systemImage: "checkmark")
+                        .font(Theme.sans(14, .semibold))
+                        .foregroundStyle(Theme.green)
+                } else {
+                    Button(event.price == 0 ? "Reserve" : "\(Config.currency)\(event.price)") { eventToBook = event }
+                        .buttonStyle(OutlineButtonStyle())
+                }
             }
         }
-        .miaCard()
+        .whiteCard(padding: 16)
     }
 
     // MARK: Recordings
 
-    private func recordingCard(_ recording: Recording) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 14) {
-                IconBubble(systemName: "play.fill", size: 44)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(recording.title)
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.text)
-                    Text("with \(recording.host) · \(recording.date)")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
-                    Label(recording.duration, systemImage: "clock")
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Theme.textMuted)
+    private var recordingsSection: some View {
+        VStack(spacing: 12) {
+            ForEach(MockData.recordings) { recording in
+                HStack(alignment: .top, spacing: 14) {
+                    ZStack {
+                        FillPhoto(name: recording.image, height: 96, width: 96, radius: 16)
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color(hex: 0xF3D9A0))
+                            .frame(width: 34, height: 34)
+                            .background(Color(hex: 0x081813, opacity: 0.78), in: Circle())
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(recording.title)
+                            .font(Theme.serif(20, .semibold))
+                            .foregroundStyle(Theme.ink)
+                        Text("with \(recording.host)")
+                            .font(Theme.sans(13))
+                            .foregroundStyle(Theme.muted)
+                        Text("\(recording.duration) · \(recording.date)")
+                            .font(Theme.sans(12))
+                            .foregroundStyle(Theme.muted)
+                        Button {
+                            playing = recording
+                        } label: {
+                            Label("Watch when ready", systemImage: "play.circle")
+                                .font(Theme.sans(13.5, .bold))
+                                .foregroundStyle(Theme.green)
+                                .frame(minHeight: 36)
+                        }
+                    }
+                    Spacer(minLength: 0)
                 }
+                .whiteCard(padding: 14)
             }
-            Button {
-                playing = recording
-            } label: {
-                Label("Watch when ready", systemImage: "play")
-            }
-            .buttonStyle(SoftButtonStyle())
         }
-        .miaCard()
     }
 }
 
@@ -194,20 +294,20 @@ struct RecordingPlayerView: View {
     @State private var player = AVPlayer(url: MockData.sampleVideoURL)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             VideoPlayer(player: player)
                 .frame(height: 240)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             Text(recording.title)
-                .font(.system(size: 22, weight: .light))
-                .foregroundStyle(Theme.text)
+                .font(Theme.serif(28, .semibold))
+                .foregroundStyle(Theme.ink)
             Text("with \(recording.host) · \(recording.duration)")
-                .font(.system(size: 14, weight: .light))
-                .foregroundStyle(Theme.textSoft)
+                .font(Theme.sans(14))
+                .foregroundStyle(Theme.muted)
             Spacer()
         }
         .padding(24)
-        .miaBackground()
+        .screenBackground()
         .onAppear { player.play() }
         .onDisappear { player.pause() }
     }
@@ -219,17 +319,18 @@ struct EventBookingSheet: View {
     let event: MemberEvent
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionLabel(event.theme, color: Theme.goldText)
             Text(event.title)
-                .font(.system(size: 24, weight: .light))
-                .foregroundStyle(Theme.text)
+                .font(Theme.serif(30, .semibold))
+                .foregroundStyle(Theme.ink)
             VStack(alignment: .leading, spacing: 8) {
                 Label("\(event.venue), \(event.city)", systemImage: "mappin.and.ellipse")
                 Label("\(event.date) at \(event.time)", systemImage: "calendar")
                 Label(event.price == 0 ? "Included in your membership" : "\(Config.currency)\(event.price) per person", systemImage: "creditcard")
             }
-            .font(.system(size: 15, weight: .light))
-            .foregroundStyle(Theme.textSoft)
+            .font(Theme.sans(14.5))
+            .foregroundStyle(Theme.muted)
             Spacer()
             Button(event.price == 0 ? "Confirm my spot" : "Pay \(Config.currency)\(event.price) & confirm") {
                 state.profile.bookedEvents.insert(event.id)
@@ -237,12 +338,12 @@ struct EventBookingSheet: View {
             }
             .buttonStyle(GoldButtonStyle())
             Text("Payments are simulated in this preview.")
-                .font(.system(size: 12, weight: .light))
-                .foregroundStyle(Theme.textMuted)
+                .font(Theme.sans(12))
+                .foregroundStyle(Theme.muted)
                 .frame(maxWidth: .infinity)
         }
         .padding(24)
         .padding(.top, 8)
-        .miaBackground()
+        .screenBackground()
     }
 }

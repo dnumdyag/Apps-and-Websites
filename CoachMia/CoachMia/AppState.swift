@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: Hashable {
-    case home, mia, journey, community, sessions
+    case home, journey, mia, sessions, community
 }
 
 struct Booking: Identifiable, Codable, Hashable {
@@ -19,6 +19,8 @@ struct UserProfile: Codable {
     var relationshipStatus = "Single"
     var goals: [String] = []
     var focusModuleID = 1
+    var blindSpot = ""
+    var avatarData: Data?
     var hasOnboarded = false
     var isPremium = false
     var completedModules: Set<Int> = []
@@ -47,6 +49,10 @@ final class AppState: ObservableObject {
     @Published var selectedTab: AppTab = .home
     /// Text a screen wants pre-filled in the Mia chat (e.g. "Ask Mia about this module").
     @Published var pendingMiaPrompt: String?
+    /// The Mia conversation. Kept here so it survives switching tabs.
+    @Published var chatMessages: [ChatMessage] = []
+    /// Hidden while typing to Mia so the keyboard has room.
+    @Published var hideTabBar = false
 
     @Published var apiKey: String {
         didSet { UserDefaults.standard.set(apiKey, forKey: Self.apiKeyKey) }
@@ -60,6 +66,39 @@ final class AppState: ObservableObject {
             profile = UserProfile()
         }
         apiKey = UserDefaults.standard.string(forKey: Self.apiKeyKey) ?? Config.anthropicAPIKey
+        applyScreenshotArguments()
+    }
+
+    /// Used by the CI screenshot job: `-demoProfile` fills in a sample member,
+    /// `-tab journey` (etc.) opens that tab.
+    private func applyScreenshotArguments() {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-demoProfile") {
+            var p = UserProfile()
+            p.name = "James"
+            p.age = "32"
+            p.goals = ["Attract the right partner"]
+            p.focusModuleID = 3
+            p.blindSpot = "Waiting for the perfect moment"
+            p.completedModules = [1, 2]
+            p.joinedGroups = [1, 2]
+            p.isPremium = true
+            p.hasOnboarded = true
+            let today = Date()
+            p.challengeDays = Set((1...6).compactMap { offset in
+                Calendar.current.date(byAdding: .day, value: -offset, to: today).map { dayKey($0) }
+            })
+            profile = p
+        }
+        if let i = args.firstIndex(of: "-tab"), i + 1 < args.count {
+            switch args[i + 1] {
+            case "journey": selectedTab = .journey
+            case "mia": selectedTab = .mia
+            case "sessions": selectedTab = .sessions
+            case "community": selectedTab = .community
+            default: selectedTab = .home
+            }
+        }
     }
 
     private func save() {
@@ -70,6 +109,7 @@ final class AppState: ObservableObject {
 
     func resetDemo() {
         profile = UserProfile()
+        chatMessages = []
         selectedTab = .home
     }
 

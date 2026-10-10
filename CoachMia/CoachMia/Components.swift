@@ -1,167 +1,269 @@
 import SwiftUI
 
-// MARK: - Card
-
-struct MiaCard: ViewModifier {
-    var padding: CGFloat = 24
-    var fill: AnyShapeStyle = AnyShapeStyle(Theme.cardFill)
-
-    func body(content: Content) -> some View {
-        content
-            .padding(padding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(fill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(Theme.border.opacity(0.3), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
-    }
-}
+// MARK: - Cards
 
 extension View {
-    func miaCard(padding: CGFloat = 24) -> some View {
-        modifier(MiaCard(padding: padding))
+    /// White rounded card.
+    func whiteCard(padding: CGFloat = 20, radius: CGFloat = 22) -> some View {
+        self
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
 
-    func miaCard<S: ShapeStyle>(padding: CGFloat = 24, fill: S) -> some View {
-        modifier(MiaCard(padding: padding, fill: AnyShapeStyle(fill)))
+    /// Deep green feature card with a soft green shadow.
+    func greenCard(padding: CGFloat = 22) -> some View {
+        self
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(Theme.onGreen)
+            .background(Theme.green, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .shadow(color: Theme.green.opacity(0.3), radius: 16, y: 16)
     }
 
-    /// Full screen gradient background used behind every screen.
-    func miaBackground() -> some View {
+    /// Gold gradient card used for membership.
+    func goldCard(padding: CGFloat = 24, radius: CGFloat = 26) -> some View {
+        self
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(Theme.goldInk)
+            .background(Theme.goldCardFill, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+    }
+
+    /// Mint screen background.
+    func screenBackground() -> some View {
         background(Theme.background.ignoresSafeArea())
     }
 }
 
 // MARK: - Buttons
 
+/// Gold gradient pill. The primary call to action.
 struct GoldButtonStyle: ButtonStyle {
+    var height: CGFloat = 54
+    var fontSize: CGFloat = 15
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 15, weight: .medium))
-            .foregroundStyle(Theme.bgTop)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(Theme.goldFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .font(Theme.sans(fontSize, .bold))
+            .foregroundStyle(Theme.goldInk)
+            .frame(maxWidth: .infinity, minHeight: height)
+            .background(Theme.goldFill, in: Capsule())
             .opacity(configuration.isPressed ? 0.85 : 1)
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
     }
 }
 
-struct SoftButtonStyle: ButtonStyle {
+/// Green outline pill. Secondary actions like "Book", "Join", "Reserve".
+struct OutlineButtonStyle: ButtonStyle {
+    var fullWidth = false
+    var height: CGFloat = 44
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 15, weight: .light))
-            .foregroundStyle(Theme.text)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(Theme.chip.opacity(0.5), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Theme.border.opacity(0.3), lineWidth: 1)
-            )
-            .opacity(configuration.isPressed ? 0.8 : 1)
+            .font(Theme.sans(14, .semibold))
+            .foregroundStyle(Theme.green)
+            .padding(.horizontal, 18)
+            .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: height)
+            .overlay(Capsule().stroke(Theme.green, lineWidth: 1.5))
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }
 
+/// Dark green pill used on gold cards.
+struct DarkButtonStyle: ButtonStyle {
+    var fullWidth = true
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(Theme.sans(15, .bold))
+            .foregroundStyle(Theme.onGreen)
+            .padding(.horizontal, 20)
+            .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: fullWidth ? 52 : 44)
+            .background(Theme.greenDeep, in: Capsule())
+            .opacity(configuration.isPressed ? 0.85 : 1)
+    }
+}
+
+/// White chip with a grey outline; turns green when selected.
 struct ChipButtonStyle: ButtonStyle {
-    var selected: Bool = false
+    var selected = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .light))
-            .foregroundStyle(selected ? Theme.bgTop : Theme.textSoft)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background(
-                Capsule().fill(selected ? AnyShapeStyle(Theme.goldFill) : AnyShapeStyle(Theme.chip.opacity(0.5)))
-            )
-            .overlay(Capsule().stroke(Theme.border.opacity(selected ? 0 : 0.35), lineWidth: 1))
+            .font(Theme.sans(13.5, .medium))
+            .foregroundStyle(selected ? Theme.onGreen : Theme.ink)
+            .padding(.horizontal, 16)
+            .frame(minHeight: 44)
+            .background(selected ? Theme.green : Theme.surface, in: Capsule())
+            .overlay(Capsule().stroke(selected ? Theme.green : Theme.outline, lineWidth: 1.5))
             .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
 
-// MARK: - Text helpers
+// MARK: - Text
+
+/// Big serif title with an optional gold italic ending, e.g. "Your *journey*".
+struct ScreenTitle: View {
+    let text: String
+    var accent: String? = nil
+    var size: CGFloat = 40
+
+    var body: some View {
+        accentText
+            .font(Theme.serif(size, .medium))
+            .foregroundColor(Theme.ink)
+            .lineSpacing(-2)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var accentText: Text {
+        guard let accent else { return Text(text) }
+        return Text(text) + Text(accent).font(Theme.serif(size, .medium, italic: true)).foregroundColor(Theme.goldText)
+    }
+}
 
 struct ScreenHeader: View {
     let title: String
+    var accent: String? = nil
     var subtitle: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(Theme.text)
+            ScreenTitle(text: title, accent: accent)
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundStyle(Theme.textMuted)
+                    .font(Theme.sans(15))
+                    .foregroundStyle(Theme.muted)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 12)
     }
 }
 
 struct SectionLabel: View {
     let text: String
+    var color: Color = Theme.muted
 
-    init(_ text: String) { self.text = text }
+    init(_ text: String, color: Color = Theme.muted) {
+        self.text = text
+        self.color = color
+    }
 
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 12, weight: .light))
-            .tracking(1.8)
-            .foregroundStyle(Theme.textMuted)
+            .font(Theme.sans(11, .semibold))
+            .tracking(2)
+            .foregroundStyle(color)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-struct IconBubble: View {
-    let systemName: String
-    var tint: Color = Theme.gold
-    var size: CGFloat = 44
+// MARK: - Small pieces
 
-    var body: some View {
-        Image(systemName: systemName)
-            .font(.system(size: size * 0.4, weight: .light))
-            .foregroundStyle(tint.opacity(0.9))
-            .frame(width: size, height: size)
-            .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: size * 0.35, style: .continuous))
-    }
-}
-
-struct Pill: View {
+/// Dark translucent badge laid over photos ("3 spots left").
+struct PhotoBadge: View {
     let text: String
-    var tint: Color = Theme.gold
+    var dot: Color? = nil
+    var color: Color = .white
 
     var body: some View {
-        Text(text)
-            .font(.system(size: 11, weight: .regular))
-            .foregroundStyle(tint.opacity(0.9))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(tint.opacity(0.12), in: Capsule())
-            .overlay(Capsule().stroke(tint.opacity(0.25), lineWidth: 1))
+        HStack(spacing: 7) {
+            if let dot {
+                Circle().fill(dot).frame(width: 7, height: 7)
+            }
+            Text(text)
+        }
+        .font(Theme.sans(12.5, .semibold))
+        .foregroundStyle(color)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color(hex: 0x081813, opacity: 0.78), in: Capsule())
     }
 }
 
-struct MiaAvatar: View {
-    var size: CGFloat = 44
+/// Thin progress line.
+struct ProgressLine: View {
+    let value: Double
+    var track: Color = Theme.divider
+    var fill: Color = Theme.green
+    var height: CGFloat = 4
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(track)
+                Capsule().fill(fill)
+                    .frame(width: geo.size.width * max(0, min(1, value)))
+            }
+        }
+        .frame(height: height)
+    }
+}
+
+/// Gold circle with an arrow, used on tappable cards.
+struct GoldArrow: View {
+    var size: CGFloat = 42
+
+    var body: some View {
+        Image(systemName: "arrow.right")
+            .font(.system(size: size * 0.4, weight: .semibold))
+            .foregroundStyle(Theme.goldInk)
+            .frame(width: size, height: size)
+            .background(Theme.goldFill, in: Circle())
+    }
+}
+
+/// Green outlined circle with an arrow.
+struct OutlineArrow: View {
+    var size: CGFloat = 38
+
+    var body: some View {
+        Image(systemName: "arrow.right")
+            .font(.system(size: size * 0.42, weight: .semibold))
+            .foregroundStyle(Theme.green)
+            .frame(width: size, height: size)
+            .overlay(Circle().stroke(Theme.green, lineWidth: 1.5))
+    }
+}
+
+/// Round photo, e.g. Mia's avatar.
+struct RoundPhoto: View {
+    let name: String
+    var size: CGFloat = 42
+
+    var body: some View {
+        Image(name)
+            .resizable()
+            .scaledToFill()
+            .frame(width: size, height: size)
+            .clipShape(Circle())
+    }
+}
+
+/// The user's avatar inside a gold ring: their photo if set, else their initial.
+struct UserAvatar: View {
+    @EnvironmentObject var state: AppState
+    var size: CGFloat = 50
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Theme.gold.opacity(0.12))
-                .blur(radius: 10)
-            Circle()
-                .fill(LinearGradient(colors: [Theme.border.opacity(0.7), Theme.chip.opacity(0.8)],
-                                     startPoint: .topLeading, endPoint: .bottomTrailing))
-                .overlay(Circle().stroke(Theme.gold.opacity(0.3), lineWidth: 1))
-            Image(systemName: "sparkles")
-                .font(.system(size: size * 0.4, weight: .light))
-                .foregroundStyle(Theme.gold)
+            Circle().fill(Theme.goldFill)
+            Group {
+                if let data = state.profile.avatarData, let image = UIImage(data: data) {
+                    Image(uiImage: image).resizable().scaledToFill()
+                } else {
+                    Text(String(state.firstName.prefix(1)).uppercased())
+                        .font(Theme.serif(size * 0.45, .semibold))
+                        .foregroundStyle(Theme.green)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Theme.surface)
+                }
+            }
+            .frame(width: size - 4, height: size - 4)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(Theme.background, lineWidth: size > 80 ? 3 : 2))
         }
         .frame(width: size, height: size)
     }
@@ -206,5 +308,111 @@ struct FlowLayout: Layout {
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
+    }
+}
+
+/// Lets us pick between two button styles with a ternary.
+struct AnyButtonStyle: ButtonStyle {
+    private let make: (ButtonStyleConfiguration) -> AnyView
+
+    init<S: ButtonStyle>(_ style: S) {
+        make = { AnyView(style.makeBody(configuration: $0)) }
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        make(configuration)
+    }
+}
+
+// MARK: - Floating tab bar
+
+/// The frosted pill tab bar from the design.
+struct TabPill: View {
+    @EnvironmentObject var state: AppState
+
+    private struct Item {
+        let tab: AppTab
+        let title: String
+        let icon: String
+        let selectedIcon: String
+    }
+
+    private let items: [Item] = [
+        Item(tab: .home, title: "Home", icon: "house", selectedIcon: "house.fill"),
+        Item(tab: .journey, title: "Journey", icon: "point.topleft.down.curvedto.point.bottomright.up", selectedIcon: "point.topleft.down.curvedto.point.bottomright.up"),
+        Item(tab: .mia, title: "Mia", icon: "bubble.left", selectedIcon: "bubble.left.fill"),
+        Item(tab: .sessions, title: "Sessions", icon: "play.rectangle", selectedIcon: "play.rectangle.fill"),
+        Item(tab: .community, title: "Community", icon: "person.2", selectedIcon: "person.2.fill"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(items, id: \.title) { item in
+                let selected = state.selectedTab == item.tab
+                Button {
+                    state.selectedTab = item.tab
+                } label: {
+                    VStack(spacing: 3) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: selected ? item.selectedIcon : item.icon)
+                                .font(.system(size: 19, weight: .regular))
+                                .frame(height: 24)
+                            if item.tab == .sessions {
+                                Circle()
+                                    .fill(Theme.goldDot)
+                                    .overlay(Circle().stroke(Color(hex: 0xE9F3EE), lineWidth: 1.5))
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 5, y: -2)
+                            }
+                        }
+                        Text(item.title)
+                            .font(Theme.sans(10, selected ? .semibold : .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .foregroundStyle(selected ? Color(hex: 0x0D1F18) : Color(hex: 0x2B3B34))
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .background {
+                        if selected {
+                            Capsule()
+                                .fill(LinearGradient(colors: [.white.opacity(0.92), .white.opacity(0.62)],
+                                                     startPoint: .top, endPoint: .bottom))
+                                .shadow(color: Theme.ink.opacity(0.14), radius: 3, y: 2)
+                        }
+                    }
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+        .padding(4)
+        .background {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(Color(hex: 0xCDE5D8, opacity: 0.7)))
+                .overlay(Capsule().stroke(.white.opacity(0.75), lineWidth: 1))
+                .shadow(color: Theme.ink.opacity(0.2), radius: 20, y: 12)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 4)
+    }
+}
+
+/// A photo that fills a fixed box, cropped, anchored to the top (faces stay in frame).
+struct FillPhoto: View {
+    let name: String
+    var height: CGFloat
+    var width: CGFloat? = nil
+    var radius: CGFloat = 0
+
+    var body: some View {
+        Color.clear
+            .frame(width: width, height: height)
+            .frame(maxWidth: width == nil ? .infinity : nil)
+            .overlay(alignment: .top) {
+                Image(name).resizable().scaledToFill()
+            }
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
 }

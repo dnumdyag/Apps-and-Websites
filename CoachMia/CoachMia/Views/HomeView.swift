@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var state: AppState
-    @State private var showMore = false
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -18,138 +17,99 @@ struct HomeView: View {
         return MockData.miaMessages[day % MockData.miaMessages.count]
     }
 
+    private var completed: Int { state.profile.completedModules.count }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     header
-                    miaMessageCard
-                    challengeCard
 
-                    SectionLabel("Explore when you're ready")
-                        .padding(.top, 8)
-
-                    learningCard
-                    liveCard
-                    if let booking = state.profile.bookings.sorted(by: { $0.date < $1.date }).first(where: { $0.date >= Calendar.current.startOfDay(for: Date()) }) {
-                        bookingCard(booking)
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionLabel("Explore when you're ready")
+                        learningCard
+                        liveCard
+                        if let booking = upcomingBooking {
+                            bookingCard(booking)
+                        }
                     }
-                    askMiaCard
-                    deepenCard
 
-                    SectionLabel("Reflections")
-                        .padding(.top, 8)
-                    reflections
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionLabel("Reflections")
+                        HStack(spacing: 12) {
+                            statTile(value: "\(state.streak)", unit: state.streak == 1 ? "day" : "days",
+                                     caption: state.streak > 0 ? "You've been showing up" : "Your streak starts today")
+                            statTile(value: "\(completed)", unit: completed == 1 ? "module" : "modules",
+                                     caption: "Growing with intention")
+                        }
+                    }
+
+                    challengeCard
+                    miaCard
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 32)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
             }
-            .miaBackground()
-            .sheet(isPresented: $showMore) {
-                MoreView()
-                    .environmentObject(state)
-            }
+            .screenBackground()
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
+
+    private var upcomingBooking: Booking? {
+        let today = Calendar.current.startOfDay(for: Date())
+        return state.profile.bookings.filter { $0.date >= today }.sorted { $0.date < $1.date }.first
+    }
+
+    // MARK: Pieces
 
     private var header: some View {
-        HStack {
+        HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(greeting)
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Theme.textMuted)
-                Text("Welcome back, \(state.firstName)")
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundStyle(Theme.text)
+                    .font(Theme.sans(13, .medium))
+                    .foregroundStyle(Theme.muted)
+                ScreenTitle(text: "Welcome back, ", accent: state.firstName)
             }
             Spacer()
-            Button {
-                showMore = true
+            NavigationLink {
+                ProfileView()
             } label: {
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(colors: [Theme.border.opacity(0.6), Theme.chip.opacity(0.7)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .overlay(Circle().stroke(Theme.gold.opacity(0.25)))
-                    Text(String(state.firstName.prefix(1)).uppercased())
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.gold)
-                }
-                .frame(width: 48, height: 48)
+                UserAvatar(size: 50)
             }
+            .accessibilityLabel("Your profile")
         }
-        .padding(.top, 16)
-    }
-
-    private var miaMessageCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                MiaAvatar(size: 36)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Message from Mia")
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Theme.textMuted)
-                    Text(miaMessage.0)
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundStyle(Theme.text)
-                }
-            }
-            Text(miaMessage.1)
-                .font(.system(size: 14, weight: .light))
-                .foregroundStyle(Theme.textSoft)
-                .lineSpacing(4)
-        }
-        .miaCard(padding: 28)
-    }
-
-    private var challengeCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Pill(text: "Today's challenge")
-                Spacer()
-                if state.streak > 0 {
-                    Label("\(state.streak) day streak", systemImage: "flame")
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Theme.gold)
-                }
-            }
-            Text(state.todaysChallenge)
-                .font(.system(size: 16, weight: .light))
-                .foregroundStyle(Theme.text)
-                .lineSpacing(3)
-            if state.challengeDoneToday {
-                Label("Done. Proud of you.", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Theme.gold)
-            } else {
-                Button("I did it") {
-                    withAnimation { state.completeTodaysChallenge() }
-                }
-                .buttonStyle(GoldButtonStyle())
-            }
-        }
-        .miaCard()
     }
 
     private var learningCard: some View {
-        Button {
+        let module = state.nextModule
+        let progress = Double(completed) / Double(MockData.modules.count)
+        return Button {
             state.selectedTab = .journey
         } label: {
-            HStack(alignment: .top, spacing: 16) {
-                IconBubble(systemName: "chart.line.uptrend.xyaxis", tint: Theme.textSoft)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Your learning path")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.text)
-                    Text("Module \(state.nextModule.id): \(state.nextModule.title)")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
-                    ProgressView(value: Double(state.profile.completedModules.count), total: Double(MockData.modules.count))
-                        .tint(Theme.gold)
-                        .padding(.top, 4)
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Your learning path")
+                            .font(Theme.sans(12.5, .medium))
+                            .foregroundStyle(Theme.onGreenMuted)
+                        Text(module.title)
+                            .font(Theme.serif(30, .semibold))
+                            .multilineTextAlignment(.leading)
+                        Text("Module \(module.id) of \(MockData.modules.count)")
+                            .font(Theme.sans(13.5, .semibold))
+                            .foregroundStyle(Theme.goldOnGreen)
+                    }
+                    Spacer(minLength: 0)
+                    GoldArrow()
+                }
+                HStack(spacing: 12) {
+                    ProgressLine(value: progress, track: Theme.greenTrack, fill: Theme.goldOnGreen)
+                    Text("\(Int(progress * 100))%")
+                        .font(Theme.sans(12.5, .semibold))
                 }
             }
-            .miaCard()
+            .greenCard()
         }
         .buttonStyle(.plain)
     }
@@ -159,106 +119,121 @@ struct HomeView: View {
         return Button {
             state.selectedTab = .sessions
         } label: {
-            HStack(alignment: .top, spacing: 16) {
-                IconBubble(systemName: "play.fill", tint: Color(hex: 0xF0A0A0))
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Live session available")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.text)
-                    Text("\(session.date), \(session.time) · \(session.title)")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
+            HStack(spacing: 14) {
+                FillPhoto(name: session.image, height: 66, width: 66, radius: 16)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 7) {
+                        Circle()
+                            .fill(Theme.liveDot)
+                            .frame(width: 8, height: 8)
+                            .background(Circle().fill(Theme.liveDot.opacity(0.22)).frame(width: 14, height: 14))
+                        Text("Live \(session.date.lowercased()), \(session.time)")
+                    }
+                    .font(Theme.sans(12, .semibold))
+                    .foregroundStyle(Theme.red)
+                    Text("Confidence Mastery")
+                        .font(Theme.serif(22, .semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text("with \(session.host)")
+                        .font(Theme.sans(12.5))
+                        .foregroundStyle(Theme.muted)
                 }
+                Spacer(minLength: 0)
+                OutlineArrow()
             }
-            .miaCard()
+            .padding(.vertical, 14)
+            .padding(.leading, 14)
+            .padding(.trailing, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .buttonStyle(.plain)
     }
 
     private func bookingCard(_ booking: Booking) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            IconBubble(systemName: "calendar.badge.clock")
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Your 1:1 with \(booking.coachName)")
-                    .font(.system(size: 18, weight: .light))
-                    .foregroundStyle(Theme.text)
-                Text("\(booking.date.formatted(.dateTime.weekday(.wide).month().day())) · \(booking.slot)")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Theme.textSoft)
-            }
-        }
-        .miaCard()
-    }
-
-    private var askMiaCard: some View {
-        Button {
-            state.selectedTab = .mia
-        } label: {
-            HStack(alignment: .top, spacing: 16) {
-                IconBubble(systemName: "message")
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Talk to Mia")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.text)
-                    Text("Texts, dates, profiles, nerves. Share a screenshot for feedback.")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
-                }
-            }
-            .miaCard()
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var deepenCard: some View {
-        Button {
-            showMore = true
-        } label: {
-            HStack(alignment: .top, spacing: 16) {
-                IconBubble(systemName: "crown")
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Deepen your journey")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.text)
-                    Text("Membership, private sessions with Mia, retreats & referrals")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
-                }
-            }
-            .miaCard()
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var reflections: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            reflectionRow(icon: "sparkles",
-                          title: state.streak > 0 ? "You've been showing up" : "Your streak starts today",
-                          detail: "\(state.streak) day\(state.streak == 1 ? "" : "s") of presence")
-            reflectionRow(icon: "chart.line.uptrend.xyaxis",
-                          title: "Growing with intention",
-                          detail: "\(state.profile.completedModules.count) of \(MockData.modules.count) modules completed")
-            reflectionRow(icon: "person.2",
-                          title: "Part of the community",
-                          detail: "\(state.profile.joinedGroups.count) group\(state.profile.joinedGroups.count == 1 ? "" : "s") joined")
-        }
-    }
-
-    private func reflectionRow(icon: String, title: String, detail: String) -> some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .light))
-                .foregroundStyle(Theme.gold.opacity(0.8))
-                .frame(width: 40, height: 40)
-                .background(Theme.gold.opacity(0.08), in: Circle())
+        HStack(spacing: 14) {
+            FillPhoto(name: MockData.coaches.first { $0.name == booking.coachName }?.image ?? "mia_avatar",
+                      height: 66, width: 66, radius: 16)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundStyle(Theme.text)
-                Text(detail)
-                    .font(.system(size: 12, weight: .light))
-                    .foregroundStyle(Theme.textMuted)
+                Text("Your 1:1 session")
+                    .font(Theme.sans(12, .semibold))
+                    .foregroundStyle(Theme.goldText)
+                Text("with \(booking.coachName)")
+                    .font(Theme.serif(22, .semibold))
+                    .foregroundStyle(Theme.ink)
+                Text("\(booking.date.formatted(.dateTime.weekday(.wide).month().day())) · \(booking.slot)")
+                    .font(Theme.sans(12.5))
+                    .foregroundStyle(Theme.muted)
+            }
+            Spacer(minLength: 0)
+        }
+        .whiteCard(padding: 14)
+    }
+
+    private func statTile(value: String, unit: String, caption: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(value)
+                    .font(Theme.serif(46, .semibold))
+                    .foregroundStyle(Theme.green)
+                Text(unit)
+                    .font(Theme.sans(13, .medium))
+                    .foregroundStyle(Theme.muted)
+            }
+            Text(caption)
+                .font(Theme.sans(14, .medium))
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .whiteCard(padding: 18)
+    }
+
+    private var challengeCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionLabel("Today's challenge", color: Theme.goldText)
+            Text(state.todaysChallenge)
+                .font(Theme.serif(22, .semibold))
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            if state.challengeDoneToday {
+                Label("Done. Proud of you.", systemImage: "checkmark.circle.fill")
+                    .font(Theme.sans(14, .semibold))
+                    .foregroundStyle(Theme.green)
+            } else {
+                Button("I did it") {
+                    withAnimation { state.completeTodaysChallenge() }
+                }
+                .buttonStyle(GoldButtonStyle(height: 48, fontSize: 14))
             }
         }
+        .whiteCard(padding: 22)
+    }
+
+    private var miaCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                RoundPhoto(name: "mia_avatar", size: 42)
+                SectionLabel("Message from Mia", color: Theme.goldText)
+            }
+            Text(miaMessage.0)
+                .font(Theme.serif(27, .semibold))
+                .foregroundStyle(Theme.ink)
+            Text(miaMessage.1)
+                .font(Theme.sans(14.5))
+                .foregroundStyle(Theme.muted)
+                .lineSpacing(4)
+            Button {
+                state.selectedTab = .mia
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Reply to Mia")
+                    Image(systemName: "arrow.right")
+                }
+                .font(Theme.sans(14.5, .bold))
+                .foregroundStyle(Theme.green)
+                .frame(minHeight: 44)
+            }
+        }
+        .whiteCard(padding: 22)
     }
 }

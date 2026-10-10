@@ -9,44 +9,58 @@ struct CommunityView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    ScreenHeader(title: "Community", subtitle: "You're not alone on this path")
+                VStack(alignment: .leading, spacing: 28) {
+                    ScreenHeader(title: "You're ", accent: "not alone", subtitle: "Men walking the same path as you")
 
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Your community")
-                            .font(.system(size: 12, weight: .light))
-                            .foregroundStyle(Theme.textMuted)
-                        HStack(alignment: .top, spacing: 32) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("YOUR COMMUNITY")
+                            .font(Theme.sans(11, .semibold))
+                            .tracking(2)
+                            .foregroundStyle(Theme.goldOnGreen)
+                        HStack(alignment: .top, spacing: 16) {
                             stat("\(joined.count)", "groups you're part of")
                             stat("8.2K", "men walking similar paths")
                         }
-                        Label("Moderated by the Coach Mia team to keep it respectful", systemImage: "checkmark.shield")
-                            .font(.system(size: 12, weight: .light))
-                            .foregroundStyle(Theme.textMuted)
+                        Label("Moderated by the Coach Mia team", systemImage: "checkmark.shield")
+                            .font(Theme.sans(12, .medium))
+                            .foregroundStyle(Theme.onGreenMuted)
                     }
-                    .miaCard()
+                    .greenCard()
 
                     if !joined.isEmpty {
-                        SectionLabel("Your groups").padding(.top, 8)
-                        ForEach(joined) { group in
-                            NavigationLink(value: group.id) {
-                                groupCard(group, joined: true)
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionLabel("Your groups")
+                            ForEach(joined) { group in
+                                NavigationLink(value: group.id) {
+                                    joinedCard(group)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
 
                     if !others.isEmpty {
-                        SectionLabel("More groups").padding(.top, 8)
-                        ForEach(others) { group in
-                            groupCard(group, joined: false)
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionLabel("More groups")
+                            VStack(spacing: 0) {
+                                ForEach(others) { group in
+                                    otherRow(group)
+                                    if group.id != others.last?.id {
+                                        Rectangle().fill(Theme.divider).frame(height: 1)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 18)
+                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                         }
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 32)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
             }
-            .miaBackground()
+            .screenBackground()
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Int.self) { id in
                 if let group = MockData.groups.first(where: { $0.id == id }) {
                     GroupDetailView(group: group)
@@ -56,68 +70,91 @@ struct CommunityView: View {
     }
 
     private func stat(_ value: String, _ label: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(Theme.gold)
+                .font(Theme.serif(46, .semibold))
             Text(label)
-                .font(.system(size: 12, weight: .light))
-                .foregroundStyle(Theme.textSoft)
+                .font(Theme.sans(13.5))
+                .foregroundStyle(Theme.onGreenMuted)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func groupCard(_ group: CommunityGroup, joined: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 14) {
-                IconBubble(systemName: group.icon, size: 42)
-                VStack(alignment: .leading, spacing: 6) {
+    private func joinedCard(_ group: CommunityGroup) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 14) {
+                Image(systemName: group.icon)
+                    .font(.system(size: 19))
+                    .foregroundStyle(Theme.goldOnGreen)
+                    .frame(width: 48, height: 48)
+                    .background(Theme.green, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
                     Text(group.name)
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(Theme.text)
-                    Text(group.description)
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
-                    Label("\(group.members.formatted()) members", systemImage: "person.2")
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Theme.textMuted)
+                        .font(Theme.serif(20, .semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text("\(group.members.formatted()) members")
+                        .font(Theme.sans(12, .semibold))
+                        .foregroundStyle(Theme.goldText)
                 }
+                Spacer(minLength: 0)
+                OutlineArrow(size: 40)
             }
-            if joined {
-                HStack {
-                    Text("Enter group")
-                    Image(systemName: "arrow.right")
-                }
-                .font(.system(size: 14, weight: .light))
-                .foregroundStyle(Theme.gold)
-            } else {
-                Button("Join if you wish") {
-                    withAnimation { _ = state.profile.joinedGroups.insert(group.id) }
-                }
-                .buttonStyle(SoftButtonStyle())
-            }
+            Text(group.description)
+                .font(Theme.sans(13.5))
+                .foregroundStyle(Theme.muted)
         }
-        .miaCard(padding: 24)
+        .whiteCard(padding: 18)
+    }
+
+    private func otherRow(_ group: CommunityGroup) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(group.name)
+                    .font(Theme.serif(20, .semibold))
+                    .foregroundStyle(Theme.ink)
+                Text(group.description)
+                    .font(Theme.sans(12.5))
+                    .foregroundStyle(Theme.muted)
+                Text("\(group.members.formatted()) members")
+                    .font(Theme.sans(12, .semibold))
+                    .foregroundStyle(Theme.goldText)
+            }
+            Spacer(minLength: 0)
+            Button("Join") {
+                withAnimation { _ = state.profile.joinedGroups.insert(group.id) }
+            }
+            .buttonStyle(OutlineButtonStyle())
+        }
+        .padding(.vertical, 16)
     }
 }
 
 struct GroupDetailView: View {
     @EnvironmentObject var state: AppState
+    @Environment(\.dismiss) private var dismiss
     let group: CommunityGroup
 
     @State private var draft = ""
     @State private var anonymous = false
 
+    private var trimmedDraft: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(group.members.formatted()) MEMBERS")
+                        .font(Theme.sans(11, .semibold))
+                        .tracking(2)
+                        .foregroundStyle(Theme.goldText)
                     Text(group.name)
-                        .font(.system(size: 28, weight: .light))
-                        .foregroundStyle(Theme.text)
+                        .font(Theme.serif(36, .medium))
+                        .foregroundStyle(Theme.ink)
                     Text(group.description)
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundStyle(Theme.textMuted)
+                        .font(Theme.sans(15))
+                        .foregroundStyle(Theme.muted)
                 }
+                .padding(.bottom, 8)
 
                 composer
 
@@ -126,50 +163,48 @@ struct GroupDetailView: View {
                 }
 
                 Button("Leave group") {
-                    state.profile.joinedGroups.remove(group.id)
+                    _ = state.profile.joinedGroups.remove(group.id)
+                    dismiss()
                 }
-                .font(.system(size: 13, weight: .light))
-                .foregroundStyle(Theme.textMuted)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 12)
+                .font(Theme.sans(13, .medium))
+                .foregroundStyle(Theme.muted)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .padding(.top, 8)
             }
             .padding(24)
         }
         .scrollDismissesKeyboard(.interactively)
-        .miaBackground()
+        .screenBackground()
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TextField("", text: $draft, prompt: Text("Share a win, a question, or how you're feeling...").foregroundColor(Theme.textMuted), axis: .vertical)
+            TextField("", text: $draft, prompt: Text("Share a win, a question, or how you're feeling...").foregroundColor(Theme.faint), axis: .vertical)
                 .lineLimit(2...6)
-                .font(.system(size: 15, weight: .light))
-                .foregroundStyle(Theme.text)
+                .font(Theme.sans(15))
+                .foregroundStyle(Theme.ink)
             HStack {
                 Toggle(isOn: $anonymous) {
                     Text("Post anonymously")
-                        .font(.system(size: 13, weight: .light))
-                        .foregroundStyle(Theme.textSoft)
+                        .font(Theme.sans(13, .medium))
+                        .foregroundStyle(Theme.muted)
                 }
                 .toggleStyle(.switch)
-                .tint(Theme.gold)
+                .tint(Theme.green)
                 .fixedSize()
                 Spacer()
                 Button("Post") {
-                    state.addPost(draft.trimmingCharacters(in: .whitespacesAndNewlines), to: group, anonymous: anonymous)
+                    state.addPost(trimmedDraft, to: group, anonymous: anonymous)
                     draft = ""
                 }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Theme.bgTop)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 9)
-                .background(Theme.goldFill, in: Capsule())
-                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .opacity(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
+                .buttonStyle(GoldButtonStyle(height: 40, fontSize: 14))
+                .frame(width: 90)
+                .disabled(trimmedDraft.isEmpty)
+                .opacity(trimmedDraft.isEmpty ? 0.5 : 1)
             }
         }
-        .miaCard(padding: 20)
+        .whiteCard(padding: 18)
     }
 
     private func postCard(_ post: Post) -> some View {
@@ -177,42 +212,42 @@ struct GroupDetailView: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Text(String(post.author.prefix(1)))
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Theme.gold)
-                    .frame(width: 32, height: 32)
-                    .background(Theme.gold.opacity(0.1), in: Circle())
+                    .font(Theme.serif(17, .semibold))
+                    .foregroundStyle(Theme.goldOnGreen)
+                    .frame(width: 34, height: 34)
+                    .background(Theme.green, in: Circle())
                 Text(post.author)
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundStyle(Theme.text)
+                    .font(Theme.sans(14, .semibold))
+                    .foregroundStyle(Theme.ink)
                 Spacer()
                 Text(post.timeAgo)
-                    .font(.system(size: 12, weight: .light))
-                    .foregroundStyle(Theme.textMuted)
+                    .font(Theme.sans(12))
+                    .foregroundStyle(Theme.muted)
             }
             Text(post.text)
-                .font(.system(size: 15, weight: .light))
-                .foregroundStyle(Theme.text)
+                .font(Theme.sans(14.5))
+                .foregroundStyle(Theme.ink)
                 .lineSpacing(3)
             HStack(spacing: 20) {
                 Button {
                     state.toggleLike(post)
                 } label: {
                     Label("\(post.likes + (liked ? 1 : 0))", systemImage: liked ? "heart.fill" : "heart")
-                        .foregroundStyle(liked ? Theme.gold : Theme.textMuted)
+                        .foregroundStyle(liked ? Theme.red : Theme.muted)
                 }
                 Label("Reply", systemImage: "bubble.left")
-                    .foregroundStyle(Theme.textMuted)
+                    .foregroundStyle(Theme.muted)
                 Spacer()
                 Menu {
                     Button("Report to moderators", systemImage: "flag") {}
                 } label: {
                     Image(systemName: "ellipsis")
-                        .foregroundStyle(Theme.textMuted)
-                        .frame(width: 30, height: 24)
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: 32, height: 28)
                 }
             }
-            .font(.system(size: 13, weight: .light))
+            .font(Theme.sans(13, .medium))
         }
-        .miaCard(padding: 20)
+        .whiteCard(padding: 18)
     }
 }

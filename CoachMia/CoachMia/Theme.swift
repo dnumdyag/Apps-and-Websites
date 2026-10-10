@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreText
 
 extension Color {
     init(hex: UInt32, opacity: Double = 1) {
@@ -12,41 +13,83 @@ extension Color {
     }
 }
 
-/// Palette taken from the Figma Make design.
+/// Palette and type taken from the "Coach Mia App" design canvas.
 enum Theme {
-    static let bgTop = Color(hex: 0x0A2417)
-    static let bgMid = Color(hex: 0x044531)
-    static let bgBottom = Color(hex: 0x021A0F)
+    // Grounds
+    static let background = Color(hex: 0xEBF2ED)
+    static let surface = Color.white
+    static let divider = Color(hex: 0xD8E1DA)
+    static let track = Color(hex: 0xCBD5CE)
+    static let pill = Color(hex: 0xDCE6DF)
 
-    static let gold = Color(hex: 0xD4AF5F)
-    static let goldDeep = Color(hex: 0xC2A14A)
-    static let goldDark = Color(hex: 0xB89A4E)
+    // Ink
+    static let ink = Color(hex: 0x10241D)
+    static let muted = Color(hex: 0x55615B)
+    static let faint = Color(hex: 0x6B7670)
+    static let outline = Color(hex: 0xB4BCB6)
 
-    static let text = Color(hex: 0xF5F5F0)
-    static let textSoft = Color(hex: 0xB8C4BA)
-    static let textMuted = Color(hex: 0x8A9B8E)
+    // Greens
+    static let green = Color(hex: 0x1B5E4A)
+    static let greenDeep = Color(hex: 0x0E3F31)
+    static let greenTrack = Color(hex: 0x4A8570)
+    static let onGreen = Color(hex: 0xF7F3E8)
+    static let onGreenMuted = Color(hex: 0xCFE0D7)
+    static let online = Color(hex: 0x2FA36B)
 
-    static let border = Color(hex: 0x2A5A48)
-    static let card1 = Color(hex: 0x1A5542)
-    static let card2 = Color(hex: 0x164A3B)
-    static let card3 = Color(hex: 0x134C3B)
-    static let chip = Color(hex: 0x1A4838)
+    // Golds
+    static let goldText = Color(hex: 0x7A5C17)
+    static let goldOnGreen = Color(hex: 0xEBD08A)
+    static let goldInk = Color(hex: 0x14261E)
+    static let goldCardInk = Color(hex: 0x3D2F0A)
+    static let goldDot = Color(hex: 0xC99A3C)
 
-    static let background = LinearGradient(
-        colors: [bgTop, bgMid, bgBottom],
-        startPoint: .top,
-        endPoint: .bottom
-    )
+    // Alerts
+    static let red = Color(hex: 0xA8402A)
+    static let liveDot = Color(hex: 0xD9634A)
 
-    static let cardFill = LinearGradient(
-        colors: [card1.opacity(0.6), card2.opacity(0.65), card3.opacity(0.7)],
-        startPoint: .top,
-        endPoint: .bottom
-    )
+    static let goldFill = LinearGradient(colors: [Color(hex: 0xE8D192), Color(hex: 0xD4B066)],
+                                         startPoint: .top, endPoint: .bottom)
+    static let goldCardFill = LinearGradient(colors: [Color(hex: 0xF1E0AC), Color(hex: 0xD9B66E)],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing)
 
-    static let goldFill = LinearGradient(
-        colors: [goldDeep.opacity(0.95), goldDark.opacity(0.95)],
-        startPoint: .leading,
-        endPoint: .trailing
-    )
+    // MARK: Type
+
+    enum Weight { case regular, medium, semibold, bold }
+
+    /// Cormorant Garamond, used for headings.
+    static func serif(_ size: CGFloat, _ weight: Weight = .semibold, italic: Bool = false) -> Font {
+        let name: String
+        switch (weight, italic) {
+        case (.bold, false): name = "CormorantGaramond-Bold"
+        case (.semibold, false): name = "CormorantGaramond-SemiBold"
+        case (_, false): name = "CormorantGaramond-Medium"
+        case (.semibold, true), (.bold, true): name = "CormorantGaramondItalic-SemiBoldItalic"
+        case (_, true): name = "CormorantGaramondItalic-MediumItalic"
+        }
+        return .custom(name, size: size)
+    }
+
+    /// Montserrat, used for body text and buttons.
+    static func sans(_ size: CGFloat, _ weight: Weight = .regular) -> Font {
+        switch weight {
+        case .regular: return .custom("Montserrat-Regular", size: size)
+        case .medium: return .custom("Montserrat-Medium", size: size)
+        case .semibold: return .custom("Montserrat-SemiBold", size: size)
+        case .bold: return .custom("Montserrat-Bold", size: size)
+        }
+    }
+
+    /// Mrs Saint Delafield, used for the "Coach Mia" logotype.
+    static func script(_ size: CGFloat) -> Font {
+        .custom("MrsSaintDelafield-Regular", size: size)
+    }
+
+    /// Registers the bundled .ttf files so the custom fonts above resolve.
+    static func registerFonts() {
+        let urls = (Bundle.main.urls(forResourcesWithExtension: "ttf", subdirectory: nil) ?? [])
+            + (Bundle.main.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts") ?? [])
+        for url in urls {
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
+    }
 }
