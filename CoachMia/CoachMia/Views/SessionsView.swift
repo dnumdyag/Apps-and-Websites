@@ -80,8 +80,8 @@ struct SessionsView: View {
 
             Button {
                 withAnimation {
-                    if reserved { state.profile.reservedSessions.remove(session.id) }
-                    else { state.profile.reservedSessions.insert(session.id) }
+                    if reserved { _ = state.profile.reservedSessions.remove(session.id) }
+                    else { _ = state.profile.reservedSessions.insert(session.id) }
                 }
             } label: {
                 Label(reserved ? "You're in. We'll remind you." : "Join this session",

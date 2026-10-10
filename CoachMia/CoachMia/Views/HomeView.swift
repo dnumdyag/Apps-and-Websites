@@ -23,7 +23,7 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     header
-                    miaCard
+                    miaMessageCard
                     challengeCard
 
                     SectionLabel("Explore when you're ready")
@@ -81,7 +81,7 @@ struct HomeView: View {
         .padding(.top, 16)
     }
 
-    private var miaCard: some View {
+    private var miaMessageCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
                 MiaAvatar(size: 36)

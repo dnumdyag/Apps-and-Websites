@@ -119,7 +119,7 @@ struct OnboardingView: View {
             VStack(spacing: 12) {
                 ForEach(MockData.goals, id: \.self) { goal in
                     selectableRow(goal, selected: goals.contains(goal)) {
-                        if goals.contains(goal) { goals.remove(goal) } else { goals.insert(goal) }
+                        if goals.contains(goal) { _ = goals.remove(goal) } else { _ = goals.insert(goal) }
                     }
                 }
             }
