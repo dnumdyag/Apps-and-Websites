@@ -260,7 +260,9 @@ struct SessionsView: View {
                             .font(.system(size: 13))
                             .foregroundStyle(Color(hex: 0xF3D9A0))
                             .frame(width: 34, height: 34)
-                            .background(Color(hex: 0x081813, opacity: 0.78), in: Circle())
+                            .liquidGlass(in: Circle(), tint: Color(hex: 0x081813, opacity: 0.55)) {
+                                $0.background(Color(hex: 0x081813, opacity: 0.78), in: Circle())
+                            }
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         Text(recording.title)

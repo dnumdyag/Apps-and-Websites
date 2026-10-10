@@ -48,6 +48,8 @@ struct CoachView: View {
                     .padding(.bottom, 12)
                 }
                 .scrollDismissesKeyboard(.interactively)
+                // The chat scrolls under the message bar, so its glass has something to refract.
+                .safeAreaInset(edge: .bottom, spacing: 0) { inputBar }
                 .onChange(of: state.chatMessages.count) { _, _ in
                     if let id = state.chatMessages.last?.id {
                         withAnimation { proxy.scrollTo(id, anchor: .bottom) }
@@ -57,7 +59,6 @@ struct CoachView: View {
                     if typing { withAnimation { proxy.scrollTo("typing", anchor: .bottom) } }
                 }
             }
-            inputBar
         }
         .screenBackground()
         .photosPicker(isPresented: $showPicker, selection: $pickerItem, matching: .images)
@@ -220,44 +221,51 @@ struct CoachView: View {
                     .accessibilityLabel("Remove screenshot")
                 }
             }
-            HStack(alignment: .bottom, spacing: 10) {
-                HStack(alignment: .bottom, spacing: 0) {
-                    TextField("", text: $input, prompt: Text("Share what's on your heart...").foregroundColor(Theme.faint), axis: .vertical)
-                        .lineLimit(1...5)
-                        .focused($inputFocused)
-                        .font(Theme.sans(15))
-                        .foregroundStyle(Theme.ink)
-                        .padding(.leading, 20)
-                        .padding(.vertical, 14)
-                    Button {
-                        showPicker = true
-                    } label: {
-                        Image(systemName: "photo.badge.plus")
-                            .font(.system(size: 19))
-                            .foregroundStyle(Theme.muted)
-                            .frame(width: 44, height: 44)
+            GlassGroup(spacing: 10) {
+                HStack(alignment: .bottom, spacing: 10) {
+                    HStack(alignment: .bottom, spacing: 0) {
+                        TextField("", text: $input, prompt: Text("Share what's on your heart...").foregroundColor(Theme.faint), axis: .vertical)
+                            .lineLimit(1...5)
+                            .focused($inputFocused)
+                            .font(Theme.sans(15))
+                            .foregroundStyle(Theme.ink)
+                            .padding(.leading, 20)
+                            .padding(.vertical, 14)
+                        Button {
+                            showPicker = true
+                        } label: {
+                            Image(systemName: "photo.badge.plus")
+                                .font(.system(size: 19))
+                                .foregroundStyle(Theme.muted)
+                                .frame(width: 44, height: 44)
+                        }
+                        .padding(4)
+                        .accessibilityLabel("Attach a screenshot")
                     }
-                    .padding(4)
-                    .accessibilityLabel("Attach a screenshot")
-                }
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Theme.outline, lineWidth: 1.5))
+                    .liquidGlass(in: RoundedRectangle(cornerRadius: 26, style: .continuous)) {
+                        $0.background(Theme.surface, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Theme.outline, lineWidth: 1.5))
+                    }
 
-                Button { send() } label: {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(Theme.goldInk)
-                        .frame(width: 52, height: 52)
-                        .background(Theme.goldFill, in: Circle())
+                    Button { send() } label: {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(Theme.goldInk)
+                            .frame(width: 52, height: 52)
+                            .liquidGlass(in: Circle(), tint: Color(hex: 0xD4B066), interactive: true) {
+                                $0.background(Theme.goldFill, in: Circle())
+                            }
+                    }
+                    .disabled(!canSend)
+                    .opacity(canSend ? 1 : 0.5)
+                    .accessibilityLabel("Send")
                 }
-                .disabled(!canSend)
-                .opacity(canSend ? 1 : 0.5)
-                .accessibilityLabel("Send")
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 12)
+        .background(hasLiquidGlass ? Color.clear : Theme.background)
     }
 
     private var canSend: Bool {

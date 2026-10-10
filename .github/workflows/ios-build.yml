@@ -9,7 +9,8 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    # macOS 26 runners have Xcode 26 and the iOS 26 simulator, which draw Liquid Glass.
+    runs-on: macos-26
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +32,20 @@ jobs:
       - name: Screenshots on iPhone simulator
         if: success()
         run: |
-          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for r in d.values() for x in r if x['name'].startswith('iPhone 16')))")
+          # Newest iOS runtime; prefer an iPhone 17 Pro, then any iPhone 17 or 16.
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)['devices']
+          ios = sorted((k for k in d if 'iOS' in k), key=lambda k: [int(n) for n in k.split('iOS-')[-1].split('-')], reverse=True)
+          phones = [x for k in ios for x in d[k] if x['name'].startswith('iPhone')]
+          for prefix in ('iPhone 17 Pro', 'iPhone 17', 'iPhone 16'):
+              match = [x for x in phones if x['name'].startswith(prefix)]
+              if match:
+                  print(match[0]['udid'], file=sys.stderr, end=' ')
+                  print(match[0]['name'], file=sys.stderr)
+                  print(match[0]['udid'])
+                  break
+          ")
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" CoachMia/build/Debug-iphonesimulator/CoachMia.app

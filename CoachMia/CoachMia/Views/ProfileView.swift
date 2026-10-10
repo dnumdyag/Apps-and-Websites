@@ -37,8 +37,13 @@ struct ProfileView: View {
         .screenBackground()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit profile") { showEdit = true }
-                    .buttonStyle(OutlineButtonStyle(height: 36))
+                // On iOS 26 and later the system draws a glass button here, so skip our outline.
+                if hasLiquidGlass {
+                    Button("Edit profile") { showEdit = true }
+                } else {
+                    Button("Edit profile") { showEdit = true }
+                        .buttonStyle(OutlineButtonStyle(height: 36))
+                }
             }
         }
         .sheet(isPresented: $showEdit) { EditProfileView().environmentObject(state) }

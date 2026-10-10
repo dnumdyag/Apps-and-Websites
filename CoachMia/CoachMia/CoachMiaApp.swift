@@ -41,6 +41,40 @@ struct RootView: View {
 }
 
 struct MainTabView: View {
+    var body: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            GlassTabView()
+        } else {
+            PillTabView()
+        }
+        #else
+        PillTabView()
+        #endif
+    }
+}
+
+#if compiler(>=6.2)
+/// iOS 26 and later: Apple's Liquid Glass tab bar, which shrinks while scrolling down.
+@available(iOS 26.0, *)
+private struct GlassTabView: View {
+    @EnvironmentObject var state: AppState
+
+    var body: some View {
+        TabView(selection: $state.selectedTab) {
+            Tab("Home", systemImage: "house", value: AppTab.home) { HomeView() }
+            Tab("Journey", systemImage: "point.topleft.down.curvedto.point.bottomright.up", value: AppTab.journey) { JourneyView() }
+            Tab("Mia", systemImage: "bubble.left", value: AppTab.mia) { CoachView() }
+            Tab("Sessions", systemImage: "play.rectangle", value: AppTab.sessions) { SessionsView() }
+            Tab("Community", systemImage: "person.2", value: AppTab.community) { CommunityView() }
+        }
+        .tabBarMinimizeBehavior(.onScrollDown)
+    }
+}
+#endif
+
+/// iOS 17 and 18: the frosted pill tab bar from the design.
+private struct PillTabView: View {
     @EnvironmentObject var state: AppState
 
     var body: some View {

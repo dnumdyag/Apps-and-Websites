@@ -36,6 +36,51 @@ extension View {
     }
 }
 
+// MARK: - Liquid Glass
+
+/// True when the app can draw Apple's Liquid Glass: built with Xcode 26 or later and running on iOS 26 or later.
+var hasLiquidGlass: Bool {
+    #if compiler(>=6.2)
+    if #available(iOS 26.0, *) { return true }
+    #endif
+    return false
+}
+
+extension View {
+    /// Apple's Liquid Glass in `shape` on iOS 26 and later. Older systems get `fallback` instead.
+    @ViewBuilder
+    func liquidGlass<S: Shape, F: View>(in shape: S, tint: Color? = nil, interactive: Bool = false,
+                                        @ViewBuilder otherwise fallback: (Self) -> F) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            self.glassEffect((tint.map { Glass.regular.tint($0) } ?? .regular).interactive(interactive), in: shape)
+        } else {
+            fallback(self)
+        }
+        #else
+        fallback(self)
+        #endif
+    }
+}
+
+/// Groups glass views so they render together and blend as they move (iOS 26 and later).
+struct GlassGroup<Content: View>: View {
+    var spacing: CGFloat? = nil
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: spacing) { content }
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+}
+
 // MARK: - Buttons
 
 /// Gold gradient pill. The primary call to action.
@@ -179,7 +224,9 @@ struct PhotoBadge: View {
         .foregroundStyle(color)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color(hex: 0x081813, opacity: 0.78), in: Capsule())
+        .liquidGlass(in: Capsule(), tint: Color(hex: 0x081813, opacity: 0.55)) {
+            $0.background(Color(hex: 0x081813, opacity: 0.78), in: Capsule())
+        }
     }
 }
 
