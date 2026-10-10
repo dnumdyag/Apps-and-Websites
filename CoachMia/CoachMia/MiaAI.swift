@@ -67,7 +67,8 @@ enum MiaAI {
 
         let body: [String: Any] = [
             "model": Config.model,
-            "max_tokens": 2048,
+            // Thinking is always on for Opus 5.5 and counts toward this cap, so leave headroom.
+            "max_tokens": 16000,
             "system": systemPrompt(userName: userName, goals: goals),
             "messages": messages,
             "output_config": ["effort": "low"],

@@ -161,16 +161,21 @@ enum MockData {
         CommunityGroup(id: 7, name: "Wins & Success Stories", description: "Share your progress and inspire others", members: 3211, icon: "trophy"),
     ]
 
+    /// Fixed IDs so likes on seed posts survive an app restart.
+    private static func seedID(_ n: Int) -> UUID {
+        UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", n))!
+    }
+
     static let seedPosts: [Post] = [
-        Post(groupID: 1, author: "Daniel R.", text: "Three months since the breakup. Today was the first day I didn't check her Instagram. Small win.", likes: 42, timeAgo: "2h"),
-        Post(groupID: 1, author: "Anonymous", text: "How do you deal with the evenings? That's when it hits hardest for me.", likes: 18, timeAgo: "5h"),
-        Post(groupID: 2, author: "Chris M.", text: "Swapped my sunglasses selfie for a photo of me cooking. Matches tripled in a week.", likes: 87, timeAgo: "1h"),
-        Post(groupID: 2, author: "Sam T.", text: "What's a good reply to the Hinge prompt 'I geek out on...'? Mine feels flat.", likes: 12, timeAgo: "3h"),
-        Post(groupID: 3, author: "Jordan K.", text: "Did the daily challenge at the bookstore. She recommended a book, we talked for 10 minutes. Didn't get her number but I'm proud I did it.", likes: 64, timeAgo: "4h"),
-        Post(groupID: 4, author: "Ben A.", text: "Mia's tip about asking 'what made you want to...' questions is gold. Conversations feel so different.", likes: 39, timeAgo: "1d"),
-        Post(groupID: 5, author: "Anonymous", text: "We keep having the same argument. Any advice on breaking the cycle?", likes: 9, timeAgo: "6h"),
-        Post(groupID: 6, author: "Marco P.", text: "Booked the rooftop bar from the Coach Mia partner list for Friday. Nervous but excited.", likes: 25, timeAgo: "2h"),
-        Post(groupID: 7, author: "Luke W.", text: "Six weeks in the app. Just had my third date with someone amazing. Thank you Mia and everyone here.", likes: 156, timeAgo: "30m"),
+        Post(id: seedID(1), groupID: 1, author: "Daniel R.", text: "Three months since the breakup. Today was the first day I didn't check her Instagram. Small win.", likes: 42, timeAgo: "2h"),
+        Post(id: seedID(2), groupID: 1, author: "Anonymous", text: "How do you deal with the evenings? That's when it hits hardest for me.", likes: 18, timeAgo: "5h"),
+        Post(id: seedID(3), groupID: 2, author: "Chris M.", text: "Swapped my sunglasses selfie for a photo of me cooking. Matches tripled in a week.", likes: 87, timeAgo: "1h"),
+        Post(id: seedID(4), groupID: 2, author: "Sam T.", text: "What's a good reply to the Hinge prompt 'I geek out on...'? Mine feels flat.", likes: 12, timeAgo: "3h"),
+        Post(id: seedID(5), groupID: 3, author: "Jordan K.", text: "Did the daily challenge at the bookstore. She recommended a book, we talked for 10 minutes. Didn't get her number but I'm proud I did it.", likes: 64, timeAgo: "4h"),
+        Post(id: seedID(6), groupID: 4, author: "Ben A.", text: "Mia's tip about asking 'what made you want to...' questions is gold. Conversations feel so different.", likes: 39, timeAgo: "1d"),
+        Post(id: seedID(7), groupID: 5, author: "Anonymous", text: "We keep having the same argument. Any advice on breaking the cycle?", likes: 9, timeAgo: "6h"),
+        Post(id: seedID(8), groupID: 6, author: "Marco P.", text: "Booked the rooftop bar from the Coach Mia partner list for Friday. Nervous but excited.", likes: 25, timeAgo: "2h"),
+        Post(id: seedID(9), groupID: 7, author: "Luke W.", text: "Six weeks in the app. Just had my third date with someone amazing. Thank you Mia and everyone here.", likes: 156, timeAgo: "30m"),
     ]
 
     static let liveSessions: [LiveSession] = [

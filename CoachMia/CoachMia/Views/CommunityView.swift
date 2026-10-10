@@ -136,6 +136,7 @@ struct GroupDetailView: View {
 
     @State private var draft = ""
     @State private var anonymous = false
+    @State private var reported = false
 
     private var trimmedDraft: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
 
@@ -176,6 +177,11 @@ struct GroupDetailView: View {
         .scrollDismissesKeyboard(.interactively)
         .screenBackground()
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Thanks for flagging this", isPresented: $reported) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("A moderator will review the post.")
+        }
     }
 
     private var composer: some View {
@@ -239,7 +245,7 @@ struct GroupDetailView: View {
                     .foregroundStyle(Theme.muted)
                 Spacer()
                 Menu {
-                    Button("Report to moderators", systemImage: "flag") {}
+                    Button("Report to moderators", systemImage: "flag") { reported = true }
                 } label: {
                     Image(systemName: "ellipsis")
                         .foregroundStyle(Theme.muted)
