@@ -34,6 +34,7 @@ struct ProfileView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
         }
+        .tabBarClearance()
         .screenBackground()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

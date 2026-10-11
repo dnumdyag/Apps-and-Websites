@@ -29,6 +29,16 @@ jobs:
           grep -E "error:|BUILD (SUCCEEDED|FAILED)" build.log | sort -u
           [ $status -ne 0 ] && tail -40 build.log
           exit $status
+      - name: Build for iPhone (unsigned Release, re-signed on Ed's Mac)
+        run: |
+          set -o pipefail
+          xcodebuild build -project CoachMia/CoachMia.xcodeproj -target CoachMia -configuration Release \
+            -sdk iphoneos CODE_SIGNING_ALLOWED=NO > device.log 2>&1 || { grep -E "error:" device.log | sort -u; tail -30 device.log; exit 1; }
+          cd CoachMia/build/Release-iphoneos && zip -qry "$GITHUB_WORKSPACE/CoachMia-device.zip" CoachMia.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: device-app
+          path: CoachMia-device.zip
       - name: Screenshots on iPhone simulator
         if: success()
         run: |
@@ -63,6 +73,14 @@ jobs:
             n=$((n+1))
           done
           # Every other screen, sheet and quiz step (see ScreenshotScreen.swift).
+          # Each main tab opened scrolled to its bottom, to check nothing ends up behind the tab bar.
+          for tab in home journey sessions community; do
+            xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -scrollEnd -tab $tab
+            sleep 6
+            xcrun simctl io "$UDID" screenshot shots/$(printf %02d $n)-$tab-end.png
+            xcrun simctl terminate "$UDID" com.coachmia.app
+            n=$((n+1))
+          done
           for screen in quiz1 quiz2 quiz3 result profile module membership booking group events recordings event chat; do
             xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -screen $screen
             sleep 5

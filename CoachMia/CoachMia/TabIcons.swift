@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreText
 
 /// Tab bar icons, each with a small animation when tapped. `taps` goes up by one on every tap.
 struct TabIcon: View {
@@ -7,6 +8,10 @@ struct TabIcon: View {
     let taps: Int
 
     var body: some View {
+        icon.offset(y: Self.baselineShift[tab] ?? 0)
+    }
+
+    @ViewBuilder private var icon: some View {
         switch tab {
         case .home: HomeIcon(taps: taps)
         case .journey: JourneyIcon(taps: taps)
@@ -15,6 +20,15 @@ struct TabIcon: View {
         case .community: CommunityIcon(selected: selected, taps: taps)
         }
     }
+
+    /// Puts the bottom of every icon on one line, the base of the house (measured from the bar at
+    /// 3x, 12 October 2026: the icons' lowest ink sat up to 2.7 pt apart).
+    private static let baselineShift: [AppTab: CGFloat] = [
+        .journey: 1.0 / 3,
+        .mia: -1.0 / 3,
+        .sessions: 5.0 / 3,
+        .community: 7.0 / 3,
+    ]
 
     private func symbol(_ name: String) -> some View {
         Image(systemName: name)
@@ -549,14 +563,41 @@ private struct LiquidOrbIcon: View {
     }
 
     @ViewBuilder private var monogram: some View {
-        let m = Text("M")
-            .font(.custom("CormorantGaramond-Bold", fixedSize: 16.5))
-            .offset(y: 0.5)
+        let m = MonogramShape(capHeight: 10.6)
+            .frame(width: Self.size, height: Self.size)
         if selected {
             m.foregroundStyle(Theme.goldOnGreen)
         } else {
             m.foregroundStyle(.white).blendMode(.destinationOut)
         }
+    }
+}
+
+/// The letter M drawn from Cormorant Garamond Bold's own outline and centred on its ink, not on
+/// its line box (a Text view centres the line box, which carries invisible space above and below
+/// the letter, so the M drifts). Measured: the M's visual weight sits 2.8% of its width right of
+/// its outline centre, so it is nudged left by 40% of that to sit centred to the eye.
+private struct MonogramShape: Shape {
+    var capHeight: CGFloat
+
+    private static let outline: CGPath? = {
+        let font = CTFontCreateWithName("CormorantGaramond-Bold" as CFString, 100, nil)
+        var character: UniChar = 77 // "M"
+        var glyph: CGGlyph = 0
+        guard CTFontGetGlyphsForCharacters(font, &character, &glyph, 1) else { return nil }
+        return CTFontCreatePathForGlyph(font, glyph, nil)
+    }()
+
+    func path(in rect: CGRect) -> Path {
+        guard let outline = Self.outline else { return Path() }
+        let box = outline.boundingBoxOfPath
+        let scale = capHeight / box.height
+        let nudge = -0.4 * 0.028 * box.width * scale
+        // Core Text draws upward from the baseline: centre the ink box, flip it, scale it.
+        var transform = CGAffineTransform(translationX: rect.midX + nudge, y: rect.midY)
+            .scaledBy(x: scale, y: -scale)
+            .translatedBy(x: -box.midX, y: -box.midY)
+        return Path(outline.copy(using: &transform) ?? outline)
     }
 }
 

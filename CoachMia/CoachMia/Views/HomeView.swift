@@ -51,7 +51,9 @@ struct HomeView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 24)
             }
+            .tabBarClearance()
             .screenBackground()
+            .screenshotScrollEnd()
             .toolbar(.hidden, for: .navigationBar)
         }
     }

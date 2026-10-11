@@ -63,25 +63,34 @@ struct MemberButtonStyle: ButtonStyle {
     }
 }
 
-/// A band of gold light that sweeps across the button, pauses, and sweeps again.
+/// A band of gold light that sweeps across the button, pauses, and sweeps again. Driven frame by
+/// frame from the clock (a repeating animation stuttered inside scrolling screens and sheets).
 private struct MemberShine: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var position: CGFloat = -1
+
+    private static let cycle = 3.0   // seconds from one sweep to the next
+    private static let sweep = 1.1   // seconds the light takes to cross
 
     var body: some View {
-        GeometryReader { geo in
-            LinearGradient(colors: [.clear, Theme.goldOnGreen.opacity(0.45), .clear],
-                           startPoint: .leading, endPoint: .trailing)
-                .frame(width: geo.size.width * 0.3, height: geo.size.height * 1.6)
-                .rotationEffect(.degrees(18))
-                .offset(x: position * geo.size.width * 1.3 + geo.size.width * 0.35, y: -geo.size.height * 0.3)
+        TimelineView(.animation(paused: reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: Self.cycle)
+            let p = min(t / Self.sweep, 1)
+            let eased = p < 0.5 ? 2 * p * p : 1 - pow(-2 * p + 2, 2) / 2
+            GeometryReader { geo in
+                LinearGradient(stops: [.init(color: .clear, location: 0),
+                                       .init(color: Theme.goldOnGreen.opacity(0.55), location: 0.35),
+                                       .init(color: .white.opacity(0.75), location: 0.5),
+                                       .init(color: Theme.goldOnGreen.opacity(0.55), location: 0.65),
+                                       .init(color: .clear, location: 1)],
+                               startPoint: .leading, endPoint: .trailing)
+                    .frame(width: geo.size.width * 0.28, height: geo.size.height * 2)
+                    .rotationEffect(.degrees(20))
+                    .position(x: geo.size.width * (-0.2 + 1.4 * eased), y: geo.size.height / 2)
+                    .opacity(p < 1 ? 1 : 0)
+            }
         }
         .clipShape(Capsule())
         .allowsHitTesting(false)
         .opacity(reduceMotion ? 0 : 1)
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 1.3).delay(2.2).repeatForever(autoreverses: false)) { position = 1 }
-        }
     }
 }

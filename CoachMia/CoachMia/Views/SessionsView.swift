@@ -36,7 +36,9 @@ struct SessionsView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 24)
             }
+            .tabBarClearance()
             .screenBackground()
+            .screenshotScrollEnd()
             .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $playing) { recording in
                 RecordingPlayerView(recording: recording)

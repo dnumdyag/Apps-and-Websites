@@ -30,7 +30,9 @@ struct JourneyView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 24)
             }
+            .tabBarClearance()
             .screenBackground()
+            .screenshotScrollEnd()
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Int.self) { id in
                 if let module = MockData.modules.first(where: { $0.id == id }) {
@@ -203,9 +205,19 @@ struct JourneyView: View {
 
             VStack(alignment: .leading, spacing: 14) {
                 sectionTitle("Private sessions", "Personal time with a coach when you need deeper support")
-                ForEach(MockData.coaches) { coach in
-                    coachCard(coach)
+                // One coach per card; swipe sideways. Cards snap into place and the next one peeks in.
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 12) {
+                        ForEach(MockData.coaches) { coach in
+                            coachCard(coach)
+                                .containerRelativeFrame(.horizontal) { length, _ in length * 0.8 }
+                        }
+                    }
+                    .scrollTargetLayout()
                 }
+                .scrollTargetBehavior(.viewAligned)
+                .contentMargins(.horizontal, 24, for: .scrollContent)
+                .padding(.horizontal, -24)
             }
 
             VStack(alignment: .leading, spacing: 14) {
@@ -263,22 +275,22 @@ struct JourneyView: View {
     }
 
     private func coachCard(_ coach: Coach) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            FillPhoto(name: coach.image, height: 96, width: 84, radius: 16)
-            VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 0) {
+            FillPhoto(name: coach.image, height: 230)
+            VStack(alignment: .leading, spacing: 4) {
                 Text(coach.name)
-                    .font(Theme.sans(15.5, .bold))
+                    .font(Theme.serif(26, .semibold))
                     .foregroundStyle(Theme.ink)
                 Text(coach.specialty)
-                    .font(Theme.sans(13))
+                    .font(Theme.sans(13.5))
                     .foregroundStyle(Theme.muted)
                 Text("\(coach.sessions.formatted()) sessions")
-                    .font(Theme.sans(12))
-                    .foregroundStyle(Theme.muted)
+                    .font(Theme.sans(12, .semibold))
+                    .foregroundStyle(Theme.goldText)
                 HStack(alignment: .center) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("\(Config.currency)\(coach.price)")
-                            .font(Theme.serif(24, .semibold))
+                            .font(Theme.serif(28, .semibold))
                             .foregroundStyle(Theme.ink)
                         Text("/ session")
                             .font(Theme.sans(12))
@@ -286,12 +298,15 @@ struct JourneyView: View {
                     }
                     Spacer(minLength: 0)
                     Button("Book") { bookingCoach = coach }
-                        .buttonStyle(OutlineButtonStyle())
+                        .buttonStyle(GoldButtonStyle(height: 44, fontSize: 14))
+                        .frame(width: 112)
                 }
-                .padding(.top, 4)
+                .padding(.top, 8)
             }
+            .padding(18)
         }
-        .whiteCard(padding: 14)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private func retreatCard(_ retreat: Retreat) -> some View {
@@ -437,6 +452,7 @@ struct ModuleDetailView: View {
             }
             .padding(24)
         }
+        .tabBarClearance()
         .screenBackground()
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear { player?.pause() }

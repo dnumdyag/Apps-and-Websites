@@ -436,7 +436,9 @@ struct TabPill: View {
         // iOS 26 and later: Apple's real Liquid Glass. iOS 17 and 18: our hand-built match.
         .liquidGlass(in: Capsule(), interactive: true) { $0.background { GlassSurface(shape: Capsule()) } }
         .padding(.horizontal, 20)
-        .padding(.bottom, 2)
+        // Sit low like Apple's bar: about 23 pt from the bottom of the screen, dipping into the
+        // home-indicator area instead of stopping above it (negative padding lets it overhang).
+        .padding(.bottom, -12)
     }
 }
 

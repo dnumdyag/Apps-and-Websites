@@ -59,7 +59,9 @@ struct CommunityView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 24)
             }
+            .tabBarClearance()
             .screenBackground()
+            .screenshotScrollEnd()
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Int.self) { id in
                 if let group = MockData.groups.first(where: { $0.id == id }) {
@@ -174,6 +176,7 @@ struct GroupDetailView: View {
             }
             .padding(24)
         }
+        .tabBarClearance()
         .scrollDismissesKeyboard(.interactively)
         .screenBackground()
         .navigationBarTitleDisplayMode(.inline)
