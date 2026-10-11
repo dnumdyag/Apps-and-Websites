@@ -378,19 +378,20 @@ struct AnyButtonStyle: ButtonStyle {
 struct TabPill: View {
     @EnvironmentObject var state: AppState
     @Namespace private var lens
+    /// Counts taps per tab, to trigger that tab's icon animation (see TabIcons.swift).
+    @State private var taps: [AppTab: Int] = [:]
 
     private struct Item {
         let tab: AppTab
         let title: String
-        let icon: String
     }
 
     private let items: [Item] = [
-        Item(tab: .home, title: "Home", icon: "house.fill"),
-        Item(tab: .journey, title: "Journey", icon: "point.topleft.down.curvedto.point.bottomright.up"),
-        Item(tab: .mia, title: "Mia", icon: "bubble.left.fill"),
-        Item(tab: .sessions, title: "Sessions", icon: "play.rectangle.fill"),
-        Item(tab: .community, title: "Community", icon: "person.2.fill"),
+        Item(tab: .home, title: "Home"),
+        Item(tab: .journey, title: "Journey"),
+        Item(tab: .mia, title: "Mia"),
+        Item(tab: .sessions, title: "Sessions"),
+        Item(tab: .community, title: "Community"),
     ]
 
     var body: some View {
@@ -398,12 +399,11 @@ struct TabPill: View {
             ForEach(items, id: \.title) { item in
                 let selected = state.selectedTab == item.tab
                 Button {
+                    taps[item.tab, default: 0] += 1
                     state.selectedTab = item.tab
                 } label: {
                     VStack(spacing: 3) {
-                        Image(systemName: item.icon)
-                            .font(.system(size: 21, weight: .medium))
-                            .frame(height: 26)
+                        TabIcon(tab: item.tab, selected: selected, taps: taps[item.tab, default: 0])
                         Text(item.title)
                             .font(.system(size: 10.5, weight: .semibold))
                             .lineLimit(1)
