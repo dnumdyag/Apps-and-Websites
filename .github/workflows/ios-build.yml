@@ -29,6 +29,16 @@ jobs:
           grep -E "error:|BUILD (SUCCEEDED|FAILED)" build.log | sort -u
           [ $status -ne 0 ] && tail -40 build.log
           exit $status
+      - name: Build for iPhone (unsigned Release, re-signed on Ed's Mac)
+        run: |
+          set -o pipefail
+          xcodebuild build -project CoachMia/CoachMia.xcodeproj -target CoachMia -configuration Release \
+            -sdk iphoneos CODE_SIGNING_ALLOWED=NO > device.log 2>&1 || { grep -E "error:" device.log | sort -u; tail -30 device.log; exit 1; }
+          cd CoachMia/build/Release-iphoneos && zip -qry "$GITHUB_WORKSPACE/CoachMia-device.zip" CoachMia.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: device-app
+          path: CoachMia-device.zip
       - name: Screenshots on iPhone simulator
         if: success()
         run: |

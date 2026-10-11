@@ -53,9 +53,18 @@ struct RootView: View {
 }
 
 struct MainTabView: View {
+    /// iOS 26 and later: false keeps our animated tab icons in a bar of Apple's real Liquid Glass;
+    /// true uses Apple's own tab bar instead (Liquid Glass too, but it shows Apple's symbols only).
+    static var systemTabBar: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-systemTabBar") { return true }
+        #endif
+        return false
+    }
+
     var body: some View {
         #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, *), Self.systemTabBar {
             GlassTabView()
         } else {
             PillTabView()
@@ -85,7 +94,7 @@ private struct GlassTabView: View {
 }
 #endif
 
-/// iOS 17 and 18: the frosted pill tab bar from the design.
+/// Our tab bar with the animated icons: real Liquid Glass on iOS 26 and later, our hand-built glass on 17 and 18.
 private struct PillTabView: View {
     @EnvironmentObject var state: AppState
 

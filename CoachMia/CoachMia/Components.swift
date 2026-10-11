@@ -413,7 +413,15 @@ struct TabPill: View {
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .background {
                         if selected {
-                            GlassLens().matchedGeometryEffect(id: "lens", in: lens)
+                            Group {
+                                // On real Liquid Glass the selected tab sits on a soft platter, as in Apple's bar.
+                                if hasLiquidGlass {
+                                    Capsule().fill(Color(hex: 0x0B1410, opacity: 0.08))
+                                } else {
+                                    GlassLens()
+                                }
+                            }
+                            .matchedGeometryEffect(id: "lens", in: lens)
                         }
                     }
                     .contentShape(Capsule())
@@ -425,7 +433,8 @@ struct TabPill: View {
         // Only the lens animates; the screens themselves switch instantly, as in Apple's tab bar.
         .animation(.spring(response: 0.42, dampingFraction: 0.74), value: state.selectedTab)
         .padding(4)
-        .background { GlassSurface(shape: Capsule()) }
+        // iOS 26 and later: Apple's real Liquid Glass. iOS 17 and 18: our hand-built match.
+        .liquidGlass(in: Capsule(), interactive: true) { $0.background { GlassSurface(shape: Capsule()) } }
         .padding(.horizontal, 20)
         .padding(.bottom, 2)
     }
