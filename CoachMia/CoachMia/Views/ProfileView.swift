@@ -223,7 +223,7 @@ struct ProfileView: View {
             Button(state.profile.isPremium ? "Manage" : "Explore") { showMembership = true }
                 .buttonStyle(DarkButtonStyle(fullWidth: false))
         }
-        .goldCard(padding: 20, radius: 22)
+        .membershipCard(padding: 20, radius: 22)
     }
 
     private var referralCard: some View {
@@ -463,7 +463,7 @@ struct MembershipView: View {
                         }
                     }
                 }
-                .goldCard()
+                .membershipCard()
 
                 if !state.profile.isPremium && state.aiMessagesLeft == 0 {
                     Text("You've used your \(AppState.freeMessagesPerMonth) free Mia messages this month. Full members talk to Mia without limits.")
@@ -502,11 +502,11 @@ struct MembershipView: View {
                 }
 
                 Button(state.profile.isPremium ? "You're a full member" : "Start membership") {
+                    if state.profile.isPremium { dismiss(); return }
                     state.profile.isPremium = true
                     dismiss()
                 }
-                .buttonStyle(GoldButtonStyle())
-                .disabled(state.profile.isPremium)
+                .buttonStyle(state.profile.isPremium ? AnyButtonStyle(MemberButtonStyle()) : AnyButtonStyle(GoldButtonStyle()))
 
                 Text("Tip: joining on our website costs less than in-app. Purchases are simulated in this preview.")
                     .font(Theme.sans(12))

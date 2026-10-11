@@ -257,9 +257,9 @@ struct JourneyView: View {
             Button(state.profile.isPremium ? "You're a full member" : "Explore membership") {
                 showMembership = true
             }
-            .buttonStyle(DarkButtonStyle())
+            .buttonStyle(state.profile.isPremium ? AnyButtonStyle(MemberButtonStyle()) : AnyButtonStyle(DarkButtonStyle()))
         }
-        .goldCard()
+        .membershipCard()
     }
 
     private func coachCard(_ coach: Coach) -> some View {

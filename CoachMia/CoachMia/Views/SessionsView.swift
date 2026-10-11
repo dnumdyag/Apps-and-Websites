@@ -100,7 +100,8 @@ struct SessionsView: View {
         let spotsLeft = session.maxAttendees - joining
         return VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .top) {
-                FillPhoto(name: session.image, height: 190)
+                // Tall enough to show the host from head to chest, not just a cropped face.
+                FeaturedPhoto(name: session.image, height: 290)
                 HStack {
                     PhotoBadge(text: "\(session.date) · \(session.time)", dot: Color(hex: 0xF08A6E))
                     Spacer()
@@ -294,6 +295,30 @@ struct SessionsView: View {
                 .whiteCard(padding: 14)
             }
         }
+    }
+}
+
+/// A portrait photo shown wide: full width, cropped to `height`, starting a little below the top
+/// of the photo so the person's head clears the badges and more of their shoulders shows.
+private struct FeaturedPhoto: View {
+    let name: String
+    let height: CGFloat
+    /// The share of the photo's height trimmed off the top.
+    var trimTop: CGFloat = 0.05
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let ratio = UIImage(named: name).map { $0.size.height / $0.size.width } ?? 1.5
+            let fullHeight = max(width * ratio, height)
+            Image(name)
+                .resizable()
+                .scaledToFill()
+                .frame(width: width, height: fullHeight)
+                .offset(y: -min(fullHeight * trimTop, fullHeight - height))
+        }
+        .frame(height: height)
+        .clipped()
     }
 }
 
