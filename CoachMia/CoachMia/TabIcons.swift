@@ -10,17 +10,7 @@ struct TabIcon: View {
         switch tab {
         case .home: HomeIcon(taps: taps)
         case .journey: JourneyIcon(taps: taps)
-        case .mia:
-            #if DEBUG
-            // `-miaPreview` shows the candidate monogram so Ed can judge it in the bar.
-            if ProcessInfo.processInfo.arguments.contains("-miaPreview") {
-                MiaMonogram(taps: taps)
-            } else {
-                symbol("bubble.left.fill")
-            }
-            #else
-            symbol("bubble.left.fill")
-            #endif
+        case .mia: LiquidOrbIcon(selected: selected, taps: taps)
         case .sessions: CigarIcon(selected: selected, taps: taps)
         case .community: CommunityIcon(selected: selected, taps: taps)
         }
@@ -510,48 +500,71 @@ private struct RobustoSmoke: Shape {
     }
 }
 
-// MARK: - Mia (candidate, shown only with -miaPreview): her initial in a filled circle, like a
-// monogram seal; on tap it presses down like a stamp and a gold glint crosses it
+// MARK: - Mia: the Liquid orb (Ed's pick, 11 Oct 2026). An M on an orb; on tap light swirls
+// inside the orb like liquid, the M melts into it, then rises again. Selected: green orb, gold M.
+// Not selected: a dark orb with the M cut out, so gold stays with the selected tab.
 
-private struct MiaMonogram: View {
+private struct LiquidOrbIcon: View {
+    let selected: Bool
     let taps: Int
 
-    private struct Motion {
-        var press: CGFloat = 1
-        var glint: CGFloat = -1
-    }
+    private static let size: CGFloat = 23
+    private static let blobColors = [Theme.goldDot, Theme.onGreenMuted, Theme.goldOnGreen]
+    private static let blobSizes: [CGFloat] = [0.39, 0.32, 0.25]
 
     var body: some View {
-        KeyframeAnimator(initialValue: Motion(), trigger: taps) { m in
+        KeyframeAnimator(initialValue: CGFloat(0), trigger: taps) { p in
+            let b = envelope(p, 0.25, 0.7)
+            let wobble = 1 + 0.045 * sin(p * .pi * 6) * b
             ZStack {
-                Circle()
-                    .frame(width: 23, height: 23)
-                    .overlay {
-                        Text("M")
-                            .font(Theme.serif(17, .bold))
-                            .foregroundStyle(.white)
-                            .blendMode(.destinationOut)
+                Circle().fill(selected ? Theme.green : Color(hex: 0x0B1410))
+                ZStack {
+                    ForEach(0..<3, id: \.self) { i in
+                        let a = p * .pi * 2 * (1.2 + CGFloat(i) * 0.45) + CGFloat(i) * 2.1
+                        Circle()
+                            .fill(Self.blobColors[i])
+                            .frame(width: Self.size * Self.blobSizes[i], height: Self.size * Self.blobSizes[i])
+                            .offset(x: Self.size * 0.216 * cos(a), y: Self.size * 0.216 * sin(a * 1.3))
                     }
-                    .compositingGroup()
-                LinearGradient(colors: [.clear, Theme.goldDot.opacity(0.9), .clear],
-                               startPoint: .leading, endPoint: .trailing)
-                    .frame(width: 8, height: 30)
-                    .rotationEffect(.degrees(20))
-                    .offset(x: m.glint * 16)
-                    .mask(Circle().frame(width: 23, height: 23))
+                }
+                .blur(radius: 1.8)
+                .opacity(b * 0.95)
+                // Clip to the whole orb, not just the swirls' own bounds.
+                .frame(width: Self.size, height: Self.size)
+                .clipShape(Circle())
+                monogram
+                    .opacity(1 - b)
+                    .scaleEffect(1 - 0.25 * b)
             }
+            .compositingGroup()
+            .frame(width: Self.size, height: Self.size)
+            .scaleEffect(x: wobble, y: 2 - wobble)
             .frame(width: 30, height: 26)
-            .scaleEffect(m.press)
         } keyframes: { _ in
-            KeyframeTrack(\.press) {
-                CubicKeyframe(0.88, duration: 0.1)
-                SpringKeyframe(1, duration: 0.45, spring: .bouncy)
-            }
-            KeyframeTrack(\.glint) {
-                MoveKeyframe(-1)
-                LinearKeyframe(-1, duration: 0.1)
-                CubicKeyframe(1, duration: 0.5)
+            KeyframeTrack {
+                MoveKeyframe(0)
+                LinearKeyframe(1, duration: 1.6)
             }
         }
     }
+
+    @ViewBuilder private var monogram: some View {
+        let m = Text("M")
+            .font(.custom("CormorantGaramond-Bold", fixedSize: 16.5))
+            .offset(y: 0.5)
+        if selected {
+            m.foregroundStyle(Theme.goldOnGreen)
+        } else {
+            m.foregroundStyle(.white).blendMode(.destinationOut)
+        }
+    }
+}
+
+/// Rises 0 to 1 over [0, a], holds, and falls back over [b, 1], eased in and out
+/// (the same curve as the options page).
+private func envelope(_ p: CGFloat, _ a: CGFloat, _ b: CGFloat) -> CGFloat {
+    func easeInOut(_ t: CGFloat) -> CGFloat { t < 0.5 ? 2 * t * t : 1 - pow(-2 * t + 2, 2) / 2 }
+    if p < a { return easeInOut(p / a) }
+    if p > b { return easeInOut(1 - (p - b) / (1 - b)) }
+    return 1
 }
