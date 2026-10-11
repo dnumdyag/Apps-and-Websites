@@ -431,20 +431,25 @@ struct TabPill: View {
     }
 }
 
-/// Our closest match to Liquid Glass before iOS 26: frosted blur, a milky glossy body,
-/// a bright specular rim catching light from above, and a soft lifted shadow.
+/// Our closest match to Liquid Glass before iOS 26. Clear rather than frosted: the page stays
+/// visible through it, light pools inside the thick edge, and a bright rim catches the light.
 struct GlassSurface<S: InsettableShape>: View {
     let shape: S
 
     var body: some View {
         shape
             .fill(.ultraThinMaterial)
-            .overlay(shape.fill(LinearGradient(colors: [.white.opacity(0.78), .white.opacity(0.58), .white.opacity(0.66)],
+            // Barely-there tint: glass, not frosting.
+            .overlay(shape.fill(LinearGradient(colors: [.white.opacity(0.22), .white.opacity(0.04), .white.opacity(0.12)],
                                                startPoint: .top, endPoint: .bottom)))
-            .overlay(shape.strokeBorder(LinearGradient(colors: [.white, .white.opacity(0.35), .white.opacity(0.8)],
-                                                       startPoint: .top, endPoint: .bottom), lineWidth: 1.2))
-            .overlay(shape.stroke(Color.black.opacity(0.05), lineWidth: 0.5))
-            .shadow(color: Color(hex: 0x0B1410, opacity: 0.10), radius: 24, y: 10)
+            // Thick-glass edge: light gathers just inside the rim.
+            .overlay(shape.strokeBorder(Color.white.opacity(0.6), lineWidth: 5).blur(radius: 4).clipShape(shape))
+            // Specular rim: brightest where light hits the top left.
+            .overlay(shape.strokeBorder(LinearGradient(colors: [.white, .white.opacity(0.2), .white.opacity(0.75)],
+                                                       startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
+            // Hairline so the edge still reads over pale backgrounds.
+            .overlay(shape.stroke(Color.black.opacity(0.07), lineWidth: 0.5))
+            .shadow(color: Color(hex: 0x0B1410, opacity: 0.12), radius: 22, y: 10)
             .shadow(color: Color(hex: 0x0B1410, opacity: 0.05), radius: 2, y: 1)
     }
 }
@@ -453,11 +458,11 @@ struct GlassSurface<S: InsettableShape>: View {
 private struct GlassLens: View {
     var body: some View {
         Capsule()
-            .fill(Color(hex: 0x0B1410, opacity: 0.075))
-            .overlay(Capsule().fill(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0)],
-                                                   startPoint: .top, endPoint: .center)))
-            .overlay(Capsule().strokeBorder(LinearGradient(colors: [.white.opacity(0.9), .white.opacity(0.15)],
+            .fill(Color(hex: 0x0B1410, opacity: 0.07))
+            .overlay(Capsule().strokeBorder(Color.white.opacity(0.65), lineWidth: 4).blur(radius: 3).clipShape(Capsule()))
+            .overlay(Capsule().strokeBorder(LinearGradient(colors: [.white, .white.opacity(0.25)],
                                                            startPoint: .top, endPoint: .bottom), lineWidth: 1))
+            .shadow(color: Color(hex: 0x0B1410, opacity: 0.08), radius: 4, y: 2)
     }
 }
 

@@ -102,12 +102,12 @@ private struct PillTabView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !state.hideTabBar {
                 TabPill()
-                    // Content stays faintly visible through the glass, then fades out by the bar's
-                    // bottom edge so nothing shows below it (like Apple's scroll edge effect).
+                    // The page shows through the glass; only the strip below the bar is covered,
+                    // so nothing runs into the home indicator.
                     .background {
                         LinearGradient(stops: [.init(color: Theme.background.opacity(0), location: 0),
-                                               .init(color: Theme.background.opacity(0.5), location: 0.5),
-                                               .init(color: Theme.background, location: 0.64)],
+                                               .init(color: Theme.background.opacity(0), location: 0.56),
+                                               .init(color: Theme.background, location: 0.63)],
                                        startPoint: .top, endPoint: .bottom)
                             .ignoresSafeArea(edges: .bottom)
                             .allowsHitTesting(false)
