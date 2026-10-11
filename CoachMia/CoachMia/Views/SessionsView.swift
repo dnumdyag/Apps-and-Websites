@@ -117,7 +117,7 @@ struct SessionsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     SectionLabel(session.kind.rawValue, color: Theme.goldText)
                     Text(session.title)
-                        .font(Theme.serif(28, .semibold))
+                        .font(Theme.serif(30, .semibold))
                         .foregroundStyle(Theme.ink)
                     Text("with \(session.host)")
                         .font(Theme.sans(14))
@@ -129,7 +129,7 @@ struct SessionsView: View {
                         Spacer()
                         Text("\(spotsLeft) spots left").foregroundStyle(Theme.goldText)
                     }
-                    .font(Theme.sans(12.5, .semibold))
+                    .font(Theme.sans(12, .semibold))
                     ProgressLine(value: Double(joining) / Double(session.maxAttendees), height: 6)
                 }
                 if reserved {
@@ -161,16 +161,16 @@ struct SessionsView: View {
                         .tracking(2)
                         .foregroundStyle(Theme.goldText)
                     Text(session.title)
-                        .font(Theme.serif(21, .semibold))
+                        .font(Theme.serif(22, .semibold))
                         .foregroundStyle(Theme.ink)
                     Text("with \(session.host)")
-                        .font(Theme.sans(12.5))
+                        .font(Theme.sans(12))
                         .foregroundStyle(Theme.muted)
                 }
             }
             HStack {
                 Label("\(session.date) · \(session.time)", systemImage: "calendar")
-                    .font(Theme.sans(13.5, .medium))
+                    .font(Theme.sans(13, .medium))
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 Button(reserved ? "Reserved" : "Reserve") { toggle(session) }
@@ -224,10 +224,10 @@ struct SessionsView: View {
                         .tracking(2)
                         .foregroundStyle(Theme.goldText)
                     Text(event.title)
-                        .font(Theme.serif(21, .semibold))
+                        .font(Theme.serif(22, .semibold))
                         .foregroundStyle(Theme.ink)
                     Text("\(event.venue) · \(event.city)")
-                        .font(Theme.sans(12.5))
+                        .font(Theme.sans(12))
                         .foregroundStyle(Theme.muted)
                 }
                 Spacer(minLength: 0)
@@ -239,7 +239,7 @@ struct SessionsView: View {
             }
             HStack {
                 Label("\(event.date) · \(event.time)", systemImage: "calendar")
-                    .font(Theme.sans(13.5, .medium))
+                    .font(Theme.sans(13, .medium))
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 if booked {
@@ -275,7 +275,7 @@ struct SessionsView: View {
                         }
                     VStack(alignment: .leading, spacing: 3) {
                         Text(recording.title)
-                            .font(Theme.serif(20, .semibold))
+                            .font(Theme.serif(22, .semibold))
                             .foregroundStyle(Theme.ink)
                         Text("with \(recording.host)")
                             .font(Theme.sans(13))
@@ -287,7 +287,7 @@ struct SessionsView: View {
                             playing = recording
                         } label: {
                             Label("Watch when ready", systemImage: "play.circle")
-                                .font(Theme.sans(13.5, .bold))
+                                .font(Theme.sans(13, .bold))
                                 .foregroundStyle(Theme.green)
                                 .frame(minHeight: 36)
                         }
@@ -334,7 +334,7 @@ struct RecordingPlayerView: View {
                 .frame(height: 240)
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             Text(recording.title)
-                .font(Theme.serif(28, .semibold))
+                .font(Theme.serif(30, .semibold))
                 .foregroundStyle(Theme.ink)
             Text("with \(recording.host) · \(recording.duration)")
                 .font(Theme.sans(14))
@@ -364,7 +364,7 @@ struct EventBookingSheet: View {
                 Label("\(event.date) at \(event.time)", systemImage: "calendar")
                 Label(event.price == 0 ? "Included in your membership" : "\(Config.currency)\(event.price) per person", systemImage: "creditcard")
             }
-            .font(Theme.sans(14.5))
+            .font(Theme.sans(15))
             .foregroundStyle(Theme.muted)
             Spacer()
             Button(event.price == 0 ? "Confirm my spot" : "Pay \(Config.currency)\(event.price) & confirm") {

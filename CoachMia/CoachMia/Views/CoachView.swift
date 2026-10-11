@@ -26,7 +26,7 @@ struct CoachView: View {
                 ScrollView {
                     VStack(spacing: 10) {
                         Text("Today")
-                            .font(Theme.sans(11.5, .semibold))
+                            .font(Theme.sans(11, .semibold))
                             .foregroundStyle(Color(hex: 0x3F4C45))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 5)
@@ -98,16 +98,16 @@ struct CoachView: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text("Mia")
-                    .font(Theme.serif(28, .semibold))
+                    .font(Theme.serif(30, .semibold))
                     .foregroundStyle(Theme.ink)
                 Text("AI coach · Here whenever you need")
-                    .font(Theme.sans(12.5))
+                    .font(Theme.sans(12))
                     .foregroundStyle(Theme.muted)
             }
             Spacer()
             if !state.profile.isPremium {
                 Text("\(state.aiMessagesLeft) left")
-                    .font(Theme.sans(11.5, .semibold))
+                    .font(Theme.sans(11, .semibold))
                     .foregroundStyle(Theme.goldText)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -208,7 +208,7 @@ struct CoachView: View {
                         .frame(width: 56, height: 56)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     Text("Screenshot attached")
-                        .font(Theme.sans(12.5, .medium))
+                        .font(Theme.sans(12, .medium))
                         .foregroundStyle(Theme.muted)
                     Spacer()
                     Button {

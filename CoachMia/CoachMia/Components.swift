@@ -17,7 +17,15 @@ extension View {
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .foregroundStyle(Theme.onGreen)
-            .background(Theme.green, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background {
+                let shape = RoundedRectangle(cornerRadius: 26, style: .continuous)
+                shape.fill(Theme.greenFill)
+                    // Light pooling in the upper left, and a fine rim, so the green has depth.
+                    .overlay(shape.fill(RadialGradient(colors: [.white.opacity(0.12), .clear],
+                                                       center: .topLeading, startRadius: 0, endRadius: 280)))
+                    .overlay(shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.18), .white.opacity(0.03)],
+                                                               startPoint: .top, endPoint: .bottom), lineWidth: 1))
+            }
             .shadow(color: Theme.green.opacity(0.3), radius: 16, y: 16)
     }
 
@@ -137,7 +145,7 @@ struct ChipButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Theme.sans(13.5, .medium))
+            .font(Theme.sans(13, .medium))
             .foregroundStyle(selected ? Theme.onGreen : Theme.ink)
             .padding(.horizontal, 16)
             .frame(minHeight: 44)
@@ -220,7 +228,7 @@ struct PhotoBadge: View {
             }
             Text(text)
         }
-        .font(Theme.sans(12.5, .semibold))
+        .font(Theme.sans(12, .semibold))
         .foregroundStyle(color)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -405,7 +413,7 @@ struct TabPill: View {
                     VStack(spacing: 3) {
                         TabIcon(tab: item.tab, selected: selected, taps: taps[item.tab, default: 0])
                         Text(item.title)
-                            .font(.system(size: 10.5, weight: .semibold))
+                            .font(Theme.sans(10, .semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }

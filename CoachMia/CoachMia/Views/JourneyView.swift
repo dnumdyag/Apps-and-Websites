@@ -85,7 +85,7 @@ struct JourneyView: View {
                 Text("Next: \(next.minutes) min")
                     .foregroundStyle(Theme.goldOnGreen)
             }
-            .font(Theme.sans(12.5, .semibold))
+            .font(Theme.sans(12, .semibold))
             NavigationLink(value: next.id) {
                 Text("Continue exploring")
             }
@@ -152,13 +152,13 @@ struct JourneyView: View {
                 .background(Theme.goldFill, in: Circle())
         } else if current {
             Text(String(format: "%02d", module.id))
-                .font(Theme.sans(12.5, .bold))
+                .font(Theme.sans(12, .bold))
                 .foregroundStyle(Theme.onGreen)
                 .frame(width: 36, height: 36)
                 .background(Theme.green, in: Circle())
         } else if unlocked {
             Text(String(format: "%02d", module.id))
-                .font(Theme.sans(12.5, .semibold))
+                .font(Theme.sans(12, .semibold))
                 .foregroundStyle(Color(hex: 0x3F4C45))
                 .frame(width: 36, height: 36)
                 .overlay(Circle().stroke(Color(hex: 0x8C9A92), lineWidth: 1.5))
@@ -177,7 +177,7 @@ struct JourneyView: View {
                 .font(Theme.serif(22, .semibold))
                 .foregroundStyle(dim ? Theme.faint : Theme.ink)
             Text(module.subtitle)
-                .font(Theme.sans(13.5))
+                .font(Theme.sans(13))
                 .foregroundStyle(dim ? Theme.faint : Theme.muted)
             Text(status)
                 .font(Theme.sans(12, .semibold))
@@ -234,10 +234,10 @@ struct JourneyView: View {
     private func sectionTitle(_ title: String, _ subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(Theme.serif(28, .semibold))
+                .font(Theme.serif(30, .semibold))
                 .foregroundStyle(Theme.ink)
             Text(subtitle)
-                .font(Theme.sans(14.5))
+                .font(Theme.sans(15))
                 .foregroundStyle(Theme.muted)
         }
     }
@@ -259,7 +259,7 @@ struct JourneyView: View {
                             .frame(width: 22, height: 22)
                             .background(Color(hex: 0x14261E, opacity: 0.14), in: Circle())
                         Text(feature)
-                            .font(Theme.sans(14.5, .medium))
+                            .font(Theme.sans(15, .medium))
                     }
                 }
             }
@@ -282,7 +282,7 @@ struct JourneyView: View {
                     .font(Theme.serif(26, .semibold))
                     .foregroundStyle(Theme.ink)
                 Text(coach.specialty)
-                    .font(Theme.sans(13.5))
+                    .font(Theme.sans(13))
                     .foregroundStyle(Theme.muted)
                 Text("\(coach.sessions.formatted()) sessions")
                     .font(Theme.sans(12, .semibold))
@@ -290,7 +290,7 @@ struct JourneyView: View {
                 HStack(alignment: .center) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("\(Config.currency)\(coach.price)")
-                            .font(Theme.serif(28, .semibold))
+                            .font(Theme.serif(30, .semibold))
                             .foregroundStyle(Theme.ink)
                         Text("/ session")
                             .font(Theme.sans(12))
@@ -320,13 +320,13 @@ struct JourneyView: View {
             }
             VStack(alignment: .leading, spacing: 12) {
                 Text(retreat.title)
-                    .font(Theme.serif(24, .semibold))
+                    .font(Theme.serif(26, .semibold))
                     .foregroundStyle(Theme.ink)
                 VStack(alignment: .leading, spacing: 4) {
                     Label(retreat.location, systemImage: "mappin.and.ellipse")
                     Label(retreat.dates, systemImage: "calendar")
                 }
-                .font(Theme.sans(13.5))
+                .font(Theme.sans(13))
                 .foregroundStyle(Theme.muted)
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 0) {
@@ -334,7 +334,7 @@ struct JourneyView: View {
                             .font(Theme.sans(12))
                             .foregroundStyle(Theme.muted)
                         Text("\(Config.currency)\(retreat.price.formatted())")
-                            .font(Theme.serif(28, .semibold))
+                            .font(Theme.serif(30, .semibold))
                             .foregroundStyle(Theme.ink)
                     }
                     Spacer()
@@ -352,10 +352,10 @@ struct JourneyView: View {
     private var questionsCard: some View {
         VStack(spacing: 8) {
             Text("Questions?")
-                .font(Theme.serif(24, .semibold))
+                .font(Theme.serif(26, .semibold))
                 .foregroundStyle(Theme.ink)
             Text("We're here if you need guidance")
-                .font(Theme.sans(14.5))
+                .font(Theme.sans(15))
                 .foregroundStyle(Theme.muted)
             if let url = URL(string: "mailto:\(Config.supportEmail)") {
                 Link(destination: url) {
@@ -393,7 +393,7 @@ struct ModuleDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     SectionLabel("Module \(module.id) · \(module.minutes) min", color: Theme.goldText)
                     Text(module.title)
-                        .font(Theme.serif(38, .medium))
+                        .font(Theme.serif(40, .medium))
                         .foregroundStyle(Theme.ink)
                     Text(module.subtitle)
                         .font(Theme.sans(15))
@@ -403,7 +403,7 @@ struct ModuleDetailView: View {
                 videoBlock
 
                 Text(module.summary)
-                    .font(Theme.sans(15.5))
+                    .font(Theme.sans(16))
                     .foregroundStyle(Theme.ink)
                     .lineSpacing(5)
 
@@ -417,7 +417,7 @@ struct ModuleDetailView: View {
                                 .frame(width: 22, height: 22)
                                 .background(Theme.goldFill, in: Circle())
                             Text(point)
-                                .font(Theme.sans(14.5, .medium))
+                                .font(Theme.sans(15, .medium))
                                 .foregroundStyle(Theme.ink)
                         }
                     }

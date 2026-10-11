@@ -9,7 +9,10 @@ struct CoachMiaApp: App {
 
         let nav = UINavigationBarAppearance()
         nav.configureWithTransparentBackground()
-        nav.titleTextAttributes = [.foregroundColor: UIColor(Theme.ink)]
+        nav.titleTextAttributes = [
+            .foregroundColor: UIColor(Theme.ink),
+            .font: UIFont(name: "Montserrat-SemiBold", size: 16) ?? .systemFont(ofSize: 16, weight: .semibold),
+        ]
         UINavigationBar.appearance().standardAppearance = nav
         UINavigationBar.appearance().scrollEdgeAppearance = nav
         UINavigationBar.appearance().tintColor = UIColor(Theme.green)

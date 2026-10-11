@@ -76,7 +76,7 @@ struct CommunityView: View {
             Text(value)
                 .font(Theme.serif(46, .semibold))
             Text(label)
-                .font(Theme.sans(13.5))
+                .font(Theme.sans(13))
                 .foregroundStyle(Theme.onGreenMuted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -92,7 +92,7 @@ struct CommunityView: View {
                     .background(Theme.green, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(group.name)
-                        .font(Theme.serif(20, .semibold))
+                        .font(Theme.serif(22, .semibold))
                         .foregroundStyle(Theme.ink)
                     Text("\(group.members.formatted()) members")
                         .font(Theme.sans(12, .semibold))
@@ -102,7 +102,7 @@ struct CommunityView: View {
                 OutlineArrow(size: 40)
             }
             Text(group.description)
-                .font(Theme.sans(13.5))
+                .font(Theme.sans(13))
                 .foregroundStyle(Theme.muted)
         }
         .whiteCard(padding: 18)
@@ -112,10 +112,10 @@ struct CommunityView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(group.name)
-                    .font(Theme.serif(20, .semibold))
+                    .font(Theme.serif(22, .semibold))
                     .foregroundStyle(Theme.ink)
                 Text(group.description)
-                    .font(Theme.sans(12.5))
+                    .font(Theme.sans(12))
                     .foregroundStyle(Theme.muted)
                 Text("\(group.members.formatted()) members")
                     .font(Theme.sans(12, .semibold))
@@ -151,7 +151,7 @@ struct GroupDetailView: View {
                         .tracking(2)
                         .foregroundStyle(Theme.goldText)
                     Text(group.name)
-                        .font(Theme.serif(36, .medium))
+                        .font(Theme.serif(40, .medium))
                         .foregroundStyle(Theme.ink)
                     Text(group.description)
                         .font(Theme.sans(15))
@@ -221,7 +221,7 @@ struct GroupDetailView: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Text(String(post.author.prefix(1)))
-                    .font(Theme.serif(17, .semibold))
+                    .font(Theme.serif(18, .semibold))
                     .foregroundStyle(Theme.goldOnGreen)
                     .frame(width: 34, height: 34)
                     .background(Theme.green, in: Circle())
@@ -234,7 +234,7 @@ struct GroupDetailView: View {
                     .foregroundStyle(Theme.muted)
             }
             Text(post.text)
-                .font(Theme.sans(14.5))
+                .font(Theme.sans(15))
                 .foregroundStyle(Theme.ink)
                 .lineSpacing(3)
             HStack(spacing: 20) {

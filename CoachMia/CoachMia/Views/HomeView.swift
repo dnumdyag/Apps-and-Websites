@@ -93,13 +93,13 @@ struct HomeView: View {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Your learning path")
-                            .font(Theme.sans(12.5, .medium))
+                            .font(Theme.sans(12, .medium))
                             .foregroundStyle(Theme.onGreenMuted)
                         Text(module.title)
                             .font(Theme.serif(30, .semibold))
                             .multilineTextAlignment(.leading)
                         Text("Module \(module.id) of \(MockData.modules.count)")
-                            .font(Theme.sans(13.5, .semibold))
+                            .font(Theme.sans(13, .semibold))
                             .foregroundStyle(Theme.goldOnGreen)
                     }
                     Spacer(minLength: 0)
@@ -108,7 +108,7 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     ProgressLine(value: progress, track: Theme.greenTrack, fill: Theme.goldOnGreen)
                     Text("\(Int(progress * 100))%")
-                        .font(Theme.sans(12.5, .semibold))
+                        .font(Theme.sans(12, .semibold))
                 }
             }
             .greenCard()
@@ -137,7 +137,7 @@ struct HomeView: View {
                         .font(Theme.serif(22, .semibold))
                         .foregroundStyle(Theme.ink)
                     Text("with \(session.host)")
-                        .font(Theme.sans(12.5))
+                        .font(Theme.sans(12))
                         .foregroundStyle(Theme.muted)
                 }
                 Spacer(minLength: 0)
@@ -164,7 +164,7 @@ struct HomeView: View {
                     .font(Theme.serif(22, .semibold))
                     .foregroundStyle(Theme.ink)
                 Text("\(booking.date.formatted(.dateTime.weekday(.wide).month().day())) · \(booking.slot)")
-                    .font(Theme.sans(12.5))
+                    .font(Theme.sans(12))
                     .foregroundStyle(Theme.muted)
             }
             Spacer(minLength: 0)
@@ -218,10 +218,10 @@ struct HomeView: View {
                 SectionLabel("Message from Mia", color: Theme.goldText)
             }
             Text(miaMessage.0)
-                .font(Theme.serif(27, .semibold))
+                .font(Theme.serif(26, .semibold))
                 .foregroundStyle(Theme.ink)
             Text(miaMessage.1)
-                .font(Theme.sans(14.5))
+                .font(Theme.sans(15))
                 .foregroundStyle(Theme.muted)
                 .lineSpacing(4)
             Button {
@@ -231,7 +231,7 @@ struct HomeView: View {
                     Text("Reply to Mia")
                     Image(systemName: "arrow.right")
                 }
-                .font(Theme.sans(14.5, .bold))
+                .font(Theme.sans(15, .bold))
                 .foregroundStyle(Theme.green)
                 .frame(minHeight: 44)
             }

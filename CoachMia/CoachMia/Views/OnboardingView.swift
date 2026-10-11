@@ -100,7 +100,7 @@ struct OnboardingView: View {
                     .buttonStyle(GoldButtonStyle())
                 }
                 Text("CONSCIOUS LOVE · DATING · SELF-AWARENESS")
-                    .font(Theme.sans(9.5, .semibold))
+                    .font(Theme.sans(10, .semibold))
                     .tracking(2)
                     .foregroundStyle(Theme.muted)
             }

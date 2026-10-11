@@ -47,10 +47,30 @@ enum Theme {
     static let red = Color(hex: 0xA8402A)
     static let liveDot = Color(hex: 0xD9634A)
 
-    static let goldFill = LinearGradient(colors: [Color(hex: 0xE8D192), Color(hex: 0xD4B066)],
-                                         startPoint: .top, endPoint: .bottom)
-    static let goldCardFill = LinearGradient(colors: [Color(hex: 0xF1E0AC), Color(hex: 0xD9B66E)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// Metallic gold: a bright highlight, deeper gold through the middle, a warm reflection low down.
+    static let goldFill = LinearGradient(stops: [
+        .init(color: Color(hex: 0xF4E4AE), location: 0),
+        .init(color: Color(hex: 0xE5C681), location: 0.42),
+        .init(color: Color(hex: 0xCFA150), location: 0.78),
+        .init(color: Color(hex: 0xE0BE77), location: 1),
+    ], startPoint: .top, endPoint: .bottom)
+    static let goldCardFill = LinearGradient(stops: [
+        .init(color: Color(hex: 0xF5E7B8), location: 0),
+        .init(color: Color(hex: 0xE8CD8E), location: 0.45),
+        .init(color: Color(hex: 0xD8B26A), location: 0.85),
+        .init(color: Color(hex: 0xE3C381), location: 1),
+    ], startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// Gold foil for the M: highlight, deep middle, reflection (as on the app icon).
+    static let metalGold = LinearGradient(stops: [
+        .init(color: Color(hex: 0xFAEAB2), location: 0),
+        .init(color: Color(hex: 0xECCF88), location: 0.3),
+        .init(color: Color(hex: 0xC99A3C), location: 0.55),
+        .init(color: Color(hex: 0xEED39A), location: 0.75),
+        .init(color: Color(hex: 0xC4943E), location: 1),
+    ], startPoint: .top, endPoint: .bottom)
+    /// Deep emerald with light from the upper left, for green cards and the Mia orb.
+    static let greenFill = LinearGradient(colors: [Color(hex: 0x25785D), Color(hex: 0x1B5E4A), Color(hex: 0x0E4234)],
+                                          startPoint: .topLeading, endPoint: .bottomTrailing)
 
     // MARK: Type
 

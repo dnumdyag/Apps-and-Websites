@@ -41,6 +41,7 @@ struct ProfileView: View {
                 // On iOS 26 and later the system draws a glass button here, so skip our outline.
                 if hasLiquidGlass {
                     Button("Edit profile") { showEdit = true }
+                        .font(Theme.sans(15, .semibold))
                 } else {
                     Button("Edit profile") { showEdit = true }
                         .buttonStyle(OutlineButtonStyle(height: 36))
@@ -84,7 +85,7 @@ struct ProfileView: View {
                     .font(Theme.serif(40, .medium))
                     .foregroundStyle(Theme.ink)
                 Text(subtitle)
-                    .font(Theme.sans(13.5))
+                    .font(Theme.sans(13))
                     .foregroundStyle(Theme.muted)
             }
         }
@@ -108,7 +109,7 @@ struct ProfileView: View {
             Text(state.profile.blindSpot.isEmpty ? "Take the quiz to find yours" : state.profile.blindSpot)
                 .font(Theme.serif(30, .semibold))
             Text("From your quiz. Your plan is built around this pattern.")
-                .font(Theme.sans(13.5))
+                .font(Theme.sans(13))
                 .foregroundStyle(Theme.onGreenMuted)
         }
         .greenCard()
@@ -119,7 +120,7 @@ struct ProfileView: View {
             statTile(Text("\(state.streak)"), "day streak")
             statTile(Text("\(state.profile.challengeDays.count)"), "challenges")
             statTile(Text("\(state.profile.completedModules.count)")
-                     + Text(" / \(MockData.modules.count)").font(Theme.serif(20, .semibold)).foregroundColor(Theme.muted),
+                     + Text(" / \(MockData.modules.count)").font(Theme.serif(22, .semibold)).foregroundColor(Theme.muted),
                      "modules")
         }
     }
@@ -127,10 +128,10 @@ struct ProfileView: View {
     private func statTile(_ value: Text, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             value
-                .font(Theme.serif(38, .semibold))
+                .font(Theme.serif(40, .semibold))
                 .foregroundColor(Theme.green)
             Text(label)
-                .font(Theme.sans(12.5))
+                .font(Theme.sans(12))
                 .foregroundStyle(Theme.muted)
         }
         .whiteCard(padding: 16)
@@ -186,7 +187,7 @@ struct ProfileView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(group.name)
-                                    .font(Theme.sans(14.5, .semibold))
+                                    .font(Theme.sans(15, .semibold))
                                     .foregroundStyle(Theme.ink)
                                 Text("\(group.members.formatted()) members")
                                     .font(Theme.sans(12))
@@ -218,7 +219,7 @@ struct ProfileView: View {
                     .tracking(2)
                     .foregroundStyle(Theme.goldCardInk)
                 Text(state.profile.isPremium ? "Full membership" : "Free plan")
-                    .font(Theme.serif(24, .semibold))
+                    .font(Theme.serif(26, .semibold))
             }
             Spacer()
             Button(state.profile.isPremium ? "Manage" : "Explore") { showMembership = true }
@@ -230,14 +231,15 @@ struct ProfileView: View {
     private var referralCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Invite a friend")
-                .font(Theme.serif(24, .semibold))
+                .font(Theme.serif(26, .semibold))
                 .foregroundStyle(Theme.ink)
             Text("When a friend joins with your code, you both get one month free.")
                 .font(Theme.sans(14))
                 .foregroundStyle(Theme.muted)
             HStack {
                 Text(state.profile.referralCode)
-                    .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                    .font(Theme.sans(16, .semibold))
+                    .tracking(1.5)
                     .foregroundStyle(Theme.green)
                 Spacer()
                 ShareLink(item: "I've been using Coach Mia to work on my dating life. Use my code \(state.profile.referralCode) for a free month: \(Config.websiteURL.absoluteString)") {
@@ -257,7 +259,7 @@ struct ProfileView: View {
         let progress = min(Double(monthsAsMember), 12)
         return VStack(alignment: .leading, spacing: 10) {
             Text("Become a coach")
-                .font(Theme.serif(24, .semibold))
+                .font(Theme.serif(26, .semibold))
                 .foregroundStyle(Theme.ink)
             Text("After 12 months of consistent membership you can apply to train as a Coach Mia coach and get paid to help others.")
                 .font(Theme.sans(14))
@@ -288,7 +290,7 @@ struct ProfileView: View {
                         SecureField("", text: $state.apiKey, prompt: Text("Anthropic API key (sk-ant-...)").foregroundColor(Theme.faint))
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .font(.system(size: 14, design: .monospaced))
+                            .font(Theme.sans(14))
                             .padding(.horizontal, 16)
                             .frame(height: 46)
                             .background(Theme.background, in: Capsule())
@@ -301,7 +303,7 @@ struct ProfileView: View {
                 divider
                 Toggle(isOn: $state.profile.isPremium) {
                     Text("Full membership (demo)")
-                        .font(Theme.sans(14.5, .medium))
+                        .font(Theme.sans(15, .medium))
                         .foregroundStyle(Theme.ink)
                 }
                 .tint(Theme.green)
@@ -317,7 +319,7 @@ struct ProfileView: View {
                     confirmSignOut = true
                 } label: {
                     Text("Sign out")
-                        .font(Theme.sans(14.5, .semibold))
+                        .font(Theme.sans(15, .semibold))
                         .foregroundStyle(Theme.red)
                         .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
                         .contentShape(Rectangle())
@@ -332,7 +334,7 @@ struct ProfileView: View {
     private func settingsRow(_ title: String, detail: String?) -> some View {
         HStack {
             Text(title)
-                .font(Theme.sans(14.5, .medium))
+                .font(Theme.sans(15, .medium))
                 .foregroundStyle(Theme.ink)
             Spacer()
             if let detail {
@@ -391,6 +393,7 @@ struct EditProfileView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
+                        .font(Theme.sans(15, .semibold))
                 }
             }
             .onAppear {
@@ -459,7 +462,7 @@ struct MembershipView: View {
                                     .frame(width: 22, height: 22)
                                     .background(Color(hex: 0x14261E, opacity: 0.14), in: Circle())
                                 Text(feature)
-                                    .font(Theme.sans(14.5, .medium))
+                                    .font(Theme.sans(15, .medium))
                             }
                         }
                     }
@@ -484,12 +487,12 @@ struct MembershipView: View {
                                     Text(plan.name)
                                         .font(Theme.sans(15, .bold))
                                     Text(plan.detail)
-                                        .font(Theme.sans(12.5))
+                                        .font(Theme.sans(12))
                                         .foregroundStyle(selected ? Theme.onGreenMuted : Theme.muted)
                                 }
                                 Spacer()
                                 Text(plan.price)
-                                    .font(Theme.serif(20, .semibold))
+                                    .font(Theme.serif(22, .semibold))
                                     .foregroundStyle(selected ? Theme.goldOnGreen : Theme.green)
                             }
                             .foregroundStyle(selected ? Theme.onGreen : Theme.ink)
@@ -588,6 +591,7 @@ struct BookingView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close") { dismiss() }
+                        .font(Theme.sans(15, .semibold))
                 }
             }
         }
@@ -604,7 +608,7 @@ struct BookingView: View {
                     Text(c.name)
                         .font(Theme.sans(15, .bold))
                     Text(c.specialty)
-                        .font(Theme.sans(12.5))
+                        .font(Theme.sans(12))
                         .foregroundStyle(selected ? Theme.onGreenMuted : Theme.muted)
                 }
                 Spacer()

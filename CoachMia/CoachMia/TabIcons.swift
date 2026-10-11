@@ -531,7 +531,15 @@ private struct LiquidOrbIcon: View {
             let b = envelope(p, 0.25, 0.7)
             let wobble = 1 + 0.045 * sin(p * .pi * 6) * b
             ZStack {
-                Circle().fill(selected ? Theme.green : Color(hex: 0x0B1410))
+                if selected {
+                    // Emerald with a soft highlight, as on the app icon.
+                    Circle().fill(Theme.greenFill)
+                        .overlay(Circle().fill(RadialGradient(colors: [.white.opacity(0.18), .clear],
+                                                              center: UnitPoint(x: 0.3, y: 0.25),
+                                                              startRadius: 0, endRadius: Self.size * 0.6)))
+                } else {
+                    Circle().fill(Color(hex: 0x0B1410))
+                }
                 ZStack {
                     ForEach(0..<3, id: \.self) { i in
                         let a = p * .pi * 2 * (1.2 + CGFloat(i) * 0.45) + CGFloat(i) * 2.1
@@ -566,7 +574,7 @@ private struct LiquidOrbIcon: View {
         let m = MonogramShape(capHeight: 10.6)
             .frame(width: Self.size, height: Self.size)
         if selected {
-            m.foregroundStyle(Theme.goldOnGreen)
+            m.foregroundStyle(Theme.metalGold)
         } else {
             m.foregroundStyle(.white).blendMode(.destinationOut)
         }
