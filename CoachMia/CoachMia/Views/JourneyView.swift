@@ -276,7 +276,7 @@ struct JourneyView: View {
 
     private func coachCard(_ coach: Coach) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            FillPhoto(name: coach.image, height: 230)
+            FillPhoto(name: coach.cardImage ?? coach.image, height: 230)
             VStack(alignment: .leading, spacing: 4) {
                 Text(coach.name)
                     .font(Theme.serif(26, .semibold))

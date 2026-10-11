@@ -56,12 +56,14 @@ var hasLiquidGlass: Bool {
 
 extension View {
     /// Apple's Liquid Glass in `shape` on iOS 26 and later. Older systems get `fallback` instead.
+    /// `clear` uses Apple's highly translucent variant, so more of the page shows through.
     @ViewBuilder
-    func liquidGlass<S: Shape, F: View>(in shape: S, tint: Color? = nil, interactive: Bool = false,
+    func liquidGlass<S: Shape, F: View>(in shape: S, tint: Color? = nil, interactive: Bool = false, clear: Bool = false,
                                         @ViewBuilder otherwise fallback: (Self) -> F) -> some View {
         #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
-            self.glassEffect((tint.map { Glass.regular.tint($0) } ?? .regular).interactive(interactive), in: shape)
+            let glass: Glass = clear ? .clear : .regular
+            self.glassEffect((tint.map { glass.tint($0) } ?? glass).interactive(interactive), in: shape)
         } else {
             fallback(self)
         }
@@ -381,13 +383,14 @@ struct AnyButtonStyle: ButtonStyle {
 
 // MARK: - Floating tab bar
 
-/// iOS 17 and 18: a hand-built match for Apple's Liquid Glass tab bar (iOS 26 draws the real one).
-/// Bright frosted glass, a grey glass lens that springs between tabs, Apple's filled symbols and system font.
+/// Our tab bar: Apple's clear Liquid Glass on iOS 26 and later, our hand-built match on 17 and 18.
+/// The selected tab sits under a droplet of glass that swells and stretches as it travels.
 struct TabPill: View {
     @EnvironmentObject var state: AppState
-    @Namespace private var lens
     /// Counts taps per tab, to trigger that tab's icon animation (see TabIcons.swift).
     @State private var taps: [AppTab: Int] = [:]
+    /// One per move of the droplet, so it stretches further the further it travels.
+    @State private var hop = DropletHop()
 
     private struct Item {
         let tab: AppTab
@@ -401,6 +404,10 @@ struct TabPill: View {
         Item(tab: .sessions, title: "Sessions"),
         Item(tab: .community, title: "Community"),
     ]
+
+    private func index(of tab: AppTab) -> Int {
+        items.firstIndex { $0.tab == tab } ?? 0
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -419,35 +426,54 @@ struct TabPill: View {
                     }
                     .foregroundStyle(selected ? Theme.green : Color(hex: 0x0B1410))
                     .frame(maxWidth: .infinity, minHeight: 54)
-                    .background {
-                        if selected {
-                            Group {
-                                // On real Liquid Glass the selected tab sits on a soft platter, as in Apple's bar.
-                                if hasLiquidGlass {
-                                    Capsule().fill(Color(hex: 0x0B1410, opacity: 0.08))
-                                } else {
-                                    GlassLens()
-                                }
-                            }
-                            .matchedGeometryEffect(id: "lens", in: lens)
-                        }
-                    }
                     .contentShape(Capsule())
                 }
                 .buttonStyle(GlassPressStyle())
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
-        // Only the lens animates; the screens themselves switch instantly, as in Apple's tab bar.
-        .animation(.spring(response: 0.42, dampingFraction: 0.74), value: state.selectedTab)
+        // One droplet for the whole bar, so it can travel from tab to tab instead of reappearing.
+        .background {
+            GeometryReader { geo in
+                let width = geo.size.width / CGFloat(items.count)
+                GlassDroplet(hop: hop)
+                    .frame(width: width, height: geo.size.height)
+                    .offset(x: width * CGFloat(index(of: state.selectedTab)))
+                    // Only the droplet moves; the screens themselves switch instantly, as in Apple's tab bar.
+                    .animation(.spring(response: 0.44, dampingFraction: 0.76), value: state.selectedTab)
+            }
+        }
+        .onChange(of: state.selectedTab) { old, new in
+            let from = index(of: old), to = index(of: new)
+            hop = DropletHop(count: hop.count + 1, distance: abs(to - from), forward: to > from)
+        }
         .padding(4)
-        // iOS 26 and later: Apple's real Liquid Glass. iOS 17 and 18: our hand-built match.
-        .liquidGlass(in: Capsule(), interactive: true) { $0.background { GlassSurface(shape: Capsule()) } }
+        // iOS 26 and later: Apple's clear Liquid Glass, with a faint wash so the labels stay readable
+        // over photos. iOS 17 and 18: our hand-built match.
+        .background { if hasLiquidGlass { Capsule().fill(Color.white.opacity(0.12)) } }
+        .liquidGlass(in: Capsule(), interactive: true, clear: true) { $0.background { GlassSurface(shape: Capsule()) } }
         .padding(.horizontal, 20)
         // Sit low like Apple's bar: about 23 pt from the bottom of the screen, dipping into the
         // home-indicator area instead of stopping above it (negative padding lets it overhang).
         .padding(.bottom, -12)
+        #if DEBUG
+        .task { await tourTabsForRecording() }
+        #endif
     }
+
+    #if DEBUG
+    /// `-tabTour`: steps through the tabs on its own, so a screen recording can show the droplet moving.
+    private func tourTabsForRecording() async {
+        guard ProcessInfo.processInfo.arguments.contains("-tabTour") else { return }
+        let route: [AppTab] = [.journey, .mia, .community, .home, .sessions, .journey, .home]
+        try? await Task.sleep(for: .seconds(2))
+        for tab in route {
+            taps[tab, default: 0] += 1
+            state.selectedTab = tab
+            try? await Task.sleep(for: .seconds(1.4))
+        }
+    }
+    #endif
 }
 
 /// Our closest match to Liquid Glass before iOS 26. Clear rather than frosted: the page stays
@@ -459,7 +485,7 @@ struct GlassSurface<S: InsettableShape>: View {
         shape
             .fill(.ultraThinMaterial)
             // Barely-there tint: glass, not frosting.
-            .overlay(shape.fill(LinearGradient(colors: [.white.opacity(0.22), .white.opacity(0.04), .white.opacity(0.12)],
+            .overlay(shape.fill(LinearGradient(colors: [.white.opacity(0.14), .white.opacity(0.02), .white.opacity(0.08)],
                                                startPoint: .top, endPoint: .bottom)))
             // Thick-glass edge: light gathers just inside the rim.
             .overlay(shape.strokeBorder(Color.white.opacity(0.6), lineWidth: 5).blur(radius: 4).clipShape(shape))
@@ -473,15 +499,68 @@ struct GlassSurface<S: InsettableShape>: View {
     }
 }
 
-/// The grey glass lens behind the selected tab.
-private struct GlassLens: View {
+/// One move of the selection droplet: how many tabs it crosses, and which way.
+private struct DropletHop: Equatable {
+    var count = 0
+    var distance = 1
+    var forward = true
+}
+
+/// The droplet's shape at one moment of a move.
+private struct DropletPose {
+    var stretch: CGFloat = 1
+    var swell: CGFloat = 1
+    var lift: CGFloat = 0
+}
+
+/// The selected-tab lens: a droplet of clear glass. When it moves it lifts, swells, and stretches
+/// toward where it is going (further for longer trips), then settles with a soft wobble.
+private struct GlassDroplet: View {
+    let hop: DropletHop
+
     var body: some View {
-        Capsule()
-            .fill(Color(hex: 0x0B1410, opacity: 0.07))
-            .overlay(Capsule().strokeBorder(Color.white.opacity(0.65), lineWidth: 4).blur(radius: 3).clipShape(Capsule()))
-            .overlay(Capsule().strokeBorder(LinearGradient(colors: [.white, .white.opacity(0.25)],
-                                                           startPoint: .top, endPoint: .bottom), lineWidth: 1))
-            .shadow(color: Color(hex: 0x0B1410, opacity: 0.08), radius: 4, y: 2)
+        let shape = Capsule()
+        let ink = Color(hex: 0x0B1410)
+        shape
+            // A clear body: brighter at the top where it catches the light.
+            .fill(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0.14), .white.opacity(0.26)],
+                                 startPoint: .top, endPoint: .bottom))
+            // Thick-glass edge: light pools just inside the rim.
+            .overlay(shape.strokeBorder(Color.white.opacity(0.9), lineWidth: 4).blur(radius: 3).clipShape(shape))
+            // A touch of shade inside the lower rim, so the droplet has depth.
+            .overlay(shape.strokeBorder(LinearGradient(colors: [.clear, ink.opacity(0.12)], startPoint: .center, endPoint: .bottom),
+                                        lineWidth: 3).blur(radius: 2).clipShape(shape))
+            // Specular rim, brightest at the top left.
+            .overlay(shape.strokeBorder(LinearGradient(colors: [.white, .white.opacity(0.2), .white.opacity(0.75)],
+                                                       startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
+            .shadow(color: ink.opacity(0.10), radius: 7, y: 3)
+            .shadow(color: ink.opacity(0.06), radius: 1, y: 0.5)
+            .keyframeAnimator(initialValue: DropletPose(), trigger: hop) { droplet, pose in
+                droplet
+                    // Lifted: a brighter rim and a deeper shadow.
+                    .overlay(shape.strokeBorder(Color.white, lineWidth: 1.5).opacity(pose.lift))
+                    .shadow(color: ink.opacity(0.12 * pose.lift), radius: 14, y: 8)
+                    // Stretch from the trailing side, so the droplet reaches toward the new tab.
+                    .scaleEffect(x: pose.stretch, y: pose.swell, anchor: UnitPoint(x: hop.forward ? 0.3 : 0.7, y: 0.5))
+            } keyframes: { _ in
+                let reach = 1.14 + 0.07 * CGFloat(min(max(hop.distance, 1), 4) - 1)
+                let settle = Spring(response: 0.36, dampingRatio: 0.5)
+                KeyframeTrack(\.stretch) {
+                    CubicKeyframe(reach, duration: 0.14)
+                    CubicKeyframe(reach * 0.96, duration: 0.12)
+                    SpringKeyframe(1, duration: 0.6, spring: settle)
+                }
+                KeyframeTrack(\.swell) {
+                    CubicKeyframe(1.12, duration: 0.14)
+                    CubicKeyframe(1.08, duration: 0.12)
+                    SpringKeyframe(1, duration: 0.6, spring: settle)
+                }
+                KeyframeTrack(\.lift) {
+                    CubicKeyframe(1, duration: 0.12)
+                    LinearKeyframe(1, duration: 0.16)
+                    CubicKeyframe(0, duration: 0.42)
+                }
+            }
     }
 }
 

@@ -76,6 +76,8 @@ struct Coach: Identifiable {
     let image: String
     let price: Int
     let sessions: Int
+    /// A wider photo for the large booking card, when the face crop in `image` is too tight.
+    var cardImage: String? = nil
 }
 
 struct Retreat: Identifiable {
@@ -238,7 +240,7 @@ enum MockData {
     ]
 
     static let coaches: [Coach] = [
-        Coach(id: 0, name: "Mia", specialty: "Founder · Dating & Relationships", image: "mia_avatar", price: 200, sessions: 2310),
+        Coach(id: 0, name: "Mia", specialty: "Founder · Dating & Relationships", image: "mia_avatar", price: 200, sessions: 2310, cardImage: "mia_hero"),
         Coach(id: 1, name: "Marcus Rodriguez", specialty: "Confidence & Mindset", image: "coach_marcus", price: 150, sessions: 1247),
         Coach(id: 2, name: "Alex Turner", specialty: "Dating Apps & Online", image: "coach_alex", price: 130, sessions: 1534),
         Coach(id: 3, name: "David Chen", specialty: "Social Dynamics", image: "coach_david", price: 120, sessions: 892),
