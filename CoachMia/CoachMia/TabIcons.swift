@@ -250,103 +250,262 @@ private struct CommunityIcon: View {
     }
 }
 
-// MARK: - Sessions: a cigar; on tap the ember glows gold and the smoke curls up again
+// MARK: - Sessions: a Robusto (Ed's pick, 11 Oct 2026). On tap it lifts as if raised to the lips,
+// the ember glows with the draw, then it settles with a soft spring as the smoke curls up again.
 
 private struct CigarIcon: View {
     let selected: Bool
     let taps: Int
 
+    /// `.bar` draws it in the tab bar's own colour like the other icons (details as fine gaps, the band
+    /// gold when selected, ash and smoke at half strength); `.natural` draws it in a cigar's colours.
+    enum Palette { case bar, natural }
+    static let palette: Palette = .bar
+
     private struct Motion {
+        var lift: CGFloat = 0     // 0 at rest, 1 fully raised
         var ember: Double = 0
         var smoke: CGFloat = 1
-        var sway: CGFloat = 0
     }
 
     var body: some View {
         KeyframeAnimator(initialValue: Motion(), trigger: taps) { m in
-            ZStack {
-                CigarShape(part: .body)
-                CigarShape(part: .band)
-                    .fill(selected ? Theme.goldDot : Color(hex: 0x0B1410))
-                CigarShape(part: .ember)
-                    .fill(Color(hex: 0x0B1410).opacity(0.45))
-                CigarShape(part: .ember)
-                    .fill(Theme.goldDot)
-                    .opacity(m.ember)
-                CigarSmoke(progress: m.smoke, sway: m.sway)
-                    .stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
-                    .opacity(0.6)
+            GeometryReader { geo in
+                let rect = CGRect(origin: .zero, size: geo.size)
+                let unit = Grid(rect: rect).unit
+                let pivot = Robusto.point(Robusto.pivot, in: rect)
+                let tip = Robusto.point(Robusto.smokeStart, in: rect)
+                let angle = -11 * m.lift
+                // Where the tip has moved to, so the smoke rides with it but stays upright.
+                let rad = Double(angle) * .pi / 180
+                let v = CGPoint(x: tip.x - pivot.x, y: tip.y - pivot.y)
+                let moved = CGPoint(x: pivot.x + v.x * cos(rad) - v.y * sin(rad),
+                                    y: pivot.y + v.x * sin(rad) + v.y * cos(rad))
+                ZStack {
+                    cigar(in: rect, ember: m.ember)
+                        .rotationEffect(.degrees(Double(angle)),
+                                        anchor: UnitPoint(x: pivot.x / rect.width, y: pivot.y / rect.height))
+                    smoke(progress: m.smoke, unit: unit)
+                        .offset(x: moved.x - tip.x, y: moved.y - tip.y)
+                }
+                .offset(y: -1.1 * unit * m.lift)
             }
             .frame(width: 30, height: 26)
         } keyframes: { _ in
-            // The ember glows as if drawn on.
-            KeyframeTrack(\.ember) {
-                CubicKeyframe(1, duration: 0.2)
-                LinearKeyframe(1, duration: 0.3)
-                CubicKeyframe(0, duration: 0.5)
+            // Raised to the lips, a moment there, then a soft spring back down.
+            KeyframeTrack(\.lift) {
+                CubicKeyframe(1, duration: 0.34)
+                LinearKeyframe(1, duration: 0.08)
+                SpringKeyframe(0, duration: 0.85, spring: .bouncy)
             }
-            // The smoke curl draws itself up again from the tip, swaying slightly.
+            // The ember glows with the draw.
+            KeyframeTrack(\.ember) {
+                LinearKeyframe(0, duration: 0.15)
+                CubicKeyframe(1, duration: 0.25)
+                LinearKeyframe(1, duration: 0.2)
+                CubicKeyframe(0, duration: 0.6)
+            }
+            // Then the smoke curls up again from the tip.
             KeyframeTrack(\.smoke) {
                 MoveKeyframe(0)
-                LinearKeyframe(0, duration: 0.1)
-                CubicKeyframe(1, duration: 0.7)
+                LinearKeyframe(0, duration: 0.5)
+                CubicKeyframe(1, duration: 0.8)
             }
-            KeyframeTrack(\.sway) {
-                LinearKeyframe(0, duration: 0.3)
-                CubicKeyframe(1, duration: 0.3)
-                SpringKeyframe(0, duration: 0.5, spring: .smooth)
+        }
+    }
+
+    @ViewBuilder
+    private func cigar(in rect: CGRect, ember: Double) -> some View {
+        switch Self.palette {
+        case .bar:
+            ZStack {
+                Robusto.Part(kind: .body, cut: true).fill()
+                Robusto.Part(kind: .band, cut: true).fill(selected ? Theme.goldDot : Color(hex: 0x0B1410))
+                Robusto.Part(kind: .ash, cut: true).fill().opacity(0.5)
+                Robusto.Part(kind: .ember, cut: true).fill(Theme.goldDot).opacity(ember)
             }
+        case .natural:
+            let across = Robusto.across(in: rect)
+            ZStack {
+                Robusto.Part(kind: .body, cut: false)
+                    .fill(LinearGradient(stops: [.init(color: Color(hex: 0xB4794A), location: 0),
+                                                 .init(color: Color(hex: 0x8C5631), location: 0.36),
+                                                 .init(color: Color(hex: 0x4A2814), location: 1)],
+                                         startPoint: across.0, endPoint: across.1))
+                Robusto.Part(kind: .seams, cut: false).fill(Color(hex: 0x3A1F0E).opacity(0.55))
+                Robusto.Part(kind: .band, cut: false)
+                    .fill(LinearGradient(stops: [.init(color: Color(hex: 0xF5DC8C), location: 0),
+                                                 .init(color: Color(hex: 0xD0A148), location: 0.5),
+                                                 .init(color: Color(hex: 0x8D6421), location: 1)],
+                                         startPoint: across.0, endPoint: across.1))
+                Robusto.Part(kind: .bandLines, cut: false).fill(Color(hex: 0x7A5418))
+                Robusto.Part(kind: .crest, cut: false).fill(Color(hex: 0x8C2318))
+                Robusto.Part(kind: .ember, cut: false).fill(Color(hex: 0xB8391A))
+                Robusto.Part(kind: .ash, cut: false)
+                    .fill(LinearGradient(stops: [.init(color: Color(hex: 0xE6E2DB), location: 0),
+                                                 .init(color: Color(hex: 0xBEB7AD), location: 0.5),
+                                                 .init(color: Color(hex: 0x8E877D), location: 1)],
+                                         startPoint: across.0, endPoint: across.1))
+                Robusto.Part(kind: .ashRings, cut: false).fill(Color(hex: 0x7D766C))
+                Robusto.Part(kind: .ember, cut: false).fill(Color(hex: 0xFF8A3C)).blur(radius: 0.6).opacity(ember)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func smoke(progress: CGFloat, unit: CGFloat) -> some View {
+        switch Self.palette {
+        case .bar:
+            RobustoSmoke(progress: progress)
+                .stroke(style: StrokeStyle(lineWidth: 1.5 * unit, lineCap: .round))
+                .opacity(0.5)
+        case .natural:
+            RobustoSmoke(progress: progress)
+                .stroke(Color(hex: 0xA3ACA9), style: StrokeStyle(lineWidth: 1.1 * unit, lineCap: .round))
+                .opacity(0.85)
         }
     }
 }
 
-/// The cigar lies on a diagonal: mouth end bottom left, lit end top right, with a gold band
-/// near the mouth end (gold when the tab is selected).
-private struct CigarShape: Shape {
-    enum Part { case body, band, ember }
-    let part: Part
+/// A Robusto drawn as a real cigar, in its own coordinates (x from the head at 0 to the foot at L,
+/// y across), lying on a diagonal in the 24 x 24 grid: rounded cap with its seam, two wrapper seams,
+/// a band with a crest, an ember ring and a tip of flaky ash.
+private enum Robusto {
+    static let L: CGFloat = 20.4, D: CGFloat = 4.8
+    static let r = D / 2
+    static let ash: CGFloat = 3.2, gap: CGFloat = 0.6
+    static let xt = L - ash - gap          // where the tobacco ends and the ember starts
+    static let xa = xt + gap               // where the ash starts
+    static let ra = r * 0.97
+    static let hl = 0.6 * D                // length of the rounded cap
+    static let bandW: CGFloat = 2.4
+    static let bc = hl + 0.75 + bandW / 2  // centre of the band
+    static let b0 = bc - bandW / 2, b1 = bc + bandW / 2
+    static let bh = D * 1.1                // the band stands a little proud of the body
+    static let pivot = CGPoint(x: 0.6 * D, y: 0)           // the mouth end, just behind the cap
+    static let smokeStart = CGPoint(x: L - 0.9, y: -ra - 0.35)
 
-    /// Turns the cigar's own coordinates (lying flat, x along its length) into the 24 x 24 grid.
     static func place(_ rect: CGRect) -> CGAffineTransform {
         let g = Grid(rect: rect)
-        return CGAffineTransform(translationX: -9.4, y: 0)
+        return CGAffineTransform(translationX: -L / 2, y: 0)
             .concatenating(CGAffineTransform(rotationAngle: -.pi / 6))
-            .concatenating(CGAffineTransform(translationX: 10.4, y: 14.4))
+            .concatenating(CGAffineTransform(translationX: 11.4, y: 14.4))
             .concatenating(CGAffineTransform(scaleX: g.unit, y: g.unit))
             .concatenating(CGAffineTransform(translationX: rect.midX - 12 * g.unit, y: rect.midY - 12 * g.unit))
     }
 
-    func path(in rect: CGRect) -> Path {
-        let shape: Path
-        switch part {
-        case .body:
-            // The body, minus a slot where the band sits.
-            shape = Path(roundedRect: CGRect(x: 0, y: -2.7, width: 16.4, height: 5.4), cornerRadius: 2.7)
-                .subtracting(Path(CGRect(x: 3.6, y: -3.4, width: 2.8, height: 6.8)))
-        case .band:
-            shape = Path(roundedRect: CGRect(x: 4, y: -2.9, width: 2, height: 5.8), cornerRadius: 0.5)
-        case .ember:
-            shape = Path(roundedRect: CGRect(x: 16.9, y: -2.7, width: 2, height: 5.4),
-                         cornerSize: CGSize(width: 1, height: 1.8))
+    static func point(_ p: CGPoint, in rect: CGRect) -> CGPoint { p.applying(place(rect)) }
+
+    /// Gradient end points across the cigar (top edge to bottom edge), as unit points of the frame.
+    static func across(in rect: CGRect) -> (UnitPoint, UnitPoint) {
+        let a = point(CGPoint(x: L / 2, y: -r), in: rect), b = point(CGPoint(x: L / 2, y: r), in: rect)
+        return (UnitPoint(x: a.x / rect.width, y: a.y / rect.height), UnitPoint(x: b.x / rect.width, y: b.y / rect.height))
+    }
+
+    static var bodyPath: Path {
+        var p = Path()
+        p.move(to: CGPoint(x: hl, y: -r))
+        p.addCurve(to: CGPoint(x: 0, y: 0), control1: CGPoint(x: hl * 0.42, y: -r), control2: CGPoint(x: 0, y: -r * 0.68))
+        p.addCurve(to: CGPoint(x: hl, y: r), control1: CGPoint(x: 0, y: r * 0.68), control2: CGPoint(x: hl * 0.42, y: r))
+        p.addLine(to: CGPoint(x: xt, y: r))
+        p.addLine(to: CGPoint(x: xt, y: -r))
+        p.closeSubpath()
+        return p
+    }
+
+    /// The cap's seam and the wrapper leaf's two spiral seams, as centre lines.
+    static var seamLines: Path {
+        var p = Path()
+        p.move(to: CGPoint(x: hl * 1.02, y: -r))
+        p.addQuadCurve(to: CGPoint(x: hl * 1.02, y: r), control: CGPoint(x: hl * 0.6, y: 0))
+        for i in 0..<2 {
+            let x = b1 + 1.6 + (CGFloat(i) + 0.5) * (xt - b1 - 2.8) / 2
+            p.move(to: CGPoint(x: x, y: -r))
+            p.addQuadCurve(to: CGPoint(x: x + D * 0.55, y: r), control: CGPoint(x: x + D * 0.2, y: 0))
         }
-        return shape.applying(Self.place(rect))
+        return p
+    }
+
+    static var ashPath: Path {
+        var p = Path()
+        p.move(to: CGPoint(x: xa, y: -ra))
+        p.addLine(to: CGPoint(x: L - 0.7, y: -ra))
+        p.addQuadCurve(to: CGPoint(x: L - 0.25, y: -ra * 0.45), control: CGPoint(x: L - 0.1, y: -ra))
+        p.addQuadCurve(to: CGPoint(x: L - 0.1, y: ra * 0.25), control: CGPoint(x: L + 0.15, y: -ra * 0.1))
+        p.addQuadCurve(to: CGPoint(x: L - 0.6, y: ra), control: CGPoint(x: L + 0.05, y: ra * 0.75))
+        p.addLine(to: CGPoint(x: xa, y: ra))
+        p.closeSubpath()
+        return p
+    }
+
+    static var ashRingLines: Path {
+        var p = Path()
+        for f: CGFloat in [0.38, 0.7] {
+            let x = xa + ash * f
+            p.move(to: CGPoint(x: x, y: -ra))
+            p.addQuadCurve(to: CGPoint(x: x, y: ra), control: CGPoint(x: x - 0.35, y: 0))
+        }
+        return p
+    }
+
+    static func line(_ p: Path, _ width: CGFloat) -> Path { p.strokedPath(StrokeStyle(lineWidth: width, lineCap: .butt)) }
+
+    struct Part: Shape {
+        enum Kind { case body, seams, band, bandLines, crest, ember, ash, ashRings }
+        let kind: Kind
+        /// true: the bar style, with the details cut out as fine gaps
+        let cut: Bool
+
+        func path(in rect: CGRect) -> Path {
+            let shape: Path
+            switch kind {
+            case .body:
+                if cut {
+                    let gaps = Path(CGRect(x: b0 - 0.5, y: -D, width: 0.5, height: 2 * D))
+                        .union(Path(CGRect(x: b1, y: -D, width: 0.5, height: 2 * D)))
+                        .union(line(seamLines, 0.42))
+                    shape = bodyPath.subtracting(gaps)
+                } else {
+                    shape = bodyPath
+                }
+            case .seams:
+                shape = line(seamLines, 0.3).intersection(bodyPath)
+            case .band:
+                let band = Path(roundedRect: CGRect(x: b0, y: -bh / 2, width: bandW, height: bh), cornerRadius: 0.3)
+                shape = cut ? band.subtracting(Path(ellipseIn: CGRect(x: bc - bandW * 0.26, y: -bh * 0.2, width: bandW * 0.52, height: bh * 0.4)))
+                            : band
+            case .bandLines:
+                var p = Path()
+                p.move(to: CGPoint(x: b0, y: -bh / 2 + 0.42)); p.addLine(to: CGPoint(x: b1, y: -bh / 2 + 0.42))
+                p.move(to: CGPoint(x: b0, y: bh / 2 - 0.42)); p.addLine(to: CGPoint(x: b1, y: bh / 2 - 0.42))
+                shape = line(p, 0.2)
+            case .crest:
+                shape = Path(ellipseIn: CGRect(x: bc - bandW * 0.3, y: -bh * 0.25, width: bandW * 0.6, height: bh * 0.5))
+            case .ember:
+                shape = Path(CGRect(x: xt - 0.05, y: -r, width: gap + 0.1, height: 2 * r))
+            case .ash:
+                shape = cut ? ashPath.subtracting(line(ashRingLines, 0.38)) : ashPath
+            case .ashRings:
+                shape = line(ashRingLines, 0.28).intersection(ashPath)
+            }
+            return shape.applying(Robusto.place(rect))
+        }
     }
 }
 
-/// A thin curl of smoke rising from the lit end. `progress` is how much of it is drawn.
-private struct CigarSmoke: Shape {
+/// A curl of smoke rising from the lit end. `progress` is how much of it is drawn.
+private struct RobustoSmoke: Shape {
     var progress: CGFloat
-    var sway: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        let g = Grid(rect: rect)
-        let tip = CGPoint(x: 18.9, y: 0).applying(CigarShape.place(rect))
-        let u = g.unit
+        let u = Grid(rect: rect).unit
+        let s = Robusto.point(Robusto.smokeStart, in: rect)
+        let k: CGFloat = 6 / 7
         var path = Path()
-        path.move(to: CGPoint(x: tip.x + 0.6 * u, y: tip.y - 2.6 * u))
-        path.addCurve(to: CGPoint(x: tip.x + (1.6 + sway) * u, y: tip.y - 9.5 * u),
-                      control1: CGPoint(x: tip.x - 1.8 * u, y: tip.y - 5 * u),
-                      control2: CGPoint(x: tip.x + (3.6 + sway) * u, y: tip.y - 6 * u))
+        path.move(to: s)
+        path.addCurve(to: CGPoint(x: s.x - 0.3 * u, y: s.y - 7 * k * u),
+                      control1: CGPoint(x: s.x - 2.1 * u, y: s.y - 2.3 * k * u),
+                      control2: CGPoint(x: s.x + 2 * u, y: s.y - 4.5 * k * u))
         return progress >= 1 ? path : path.trimmedPath(from: 0, to: max(0, progress))
     }
 }
