@@ -94,6 +94,9 @@ final class AppState: ObservableObject {
         }
         if let i = args.firstIndex(of: "-screen"), i + 1 < args.count {
             screenshotScreen = args[i + 1]
+            if ["miaSession", "miaPlan", "miaLive"].contains(args[i + 1]) {
+                selectedTab = .mia
+            }
             if args[i + 1] == "chat" {
                 selectedTab = .mia
                 let question = ChatMessage(role: .user, text: "We matched on Hinge and the chat is fun, but I don't know how to ask her out.")

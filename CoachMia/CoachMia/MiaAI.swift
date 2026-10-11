@@ -8,6 +8,8 @@ struct ChatMessage: Identifiable, Equatable {
     let role: Role
     let text: String
     var imageData: Data? = nil
+    /// Set on the plan Mia gives at the end of a guided session; `text` holds the same plan as words.
+    var plan: SessionPlan? = nil
 }
 
 enum MiaAIError: LocalizedError {

@@ -81,7 +81,7 @@ jobs:
             xcrun simctl terminate "$UDID" com.coachmia.app
             n=$((n+1))
           done
-          for screen in quiz1 quiz2 quiz3 result profile module membership booking group events recordings event chat; do
+          for screen in quiz1 quiz2 quiz3 result profile module membership booking group events recordings event chat miaSession miaPlan; do
             xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -screen $screen
             sleep 5
             xcrun simctl io "$UDID" screenshot shots/$(printf %02d $n)-$screen.png
