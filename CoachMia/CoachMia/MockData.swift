@@ -181,8 +181,14 @@ enum MockData {
     static let liveSessions: [LiveSession] = [
         LiveSession(id: 1, title: "Confidence Mastery Workshop", host: "Marcus Rodriguez", image: "coach_marcus", date: "Today", time: "8:00 PM", kind: .live, attendees: 23, maxAttendees: 30),
         LiveSession(id: 2, title: "Dating App Profile Reviews", host: "Alex Turner", image: "coach_alex", date: "Tomorrow", time: "7:00 PM", kind: .webinar, attendees: 67, maxAttendees: 100),
+        LiveSession(id: 5, title: "Reading Her Signals", host: "Dr. Sarah Thompson", image: "coach_sarah", date: "Wed", time: "7:30 PM", kind: .live, attendees: 41, maxAttendees: 60),
         LiveSession(id: 3, title: "Q&A: First Date Strategies", host: "David Chen", image: "coach_david", date: "Thu", time: "6:30 PM", kind: .webinar, attendees: 45, maxAttendees: 75),
+        LiveSession(id: 6, title: "Texting That Leads to Dates", host: "Alex Turner", image: "coach_alex", date: "Fri", time: "6:00 PM", kind: .webinar, attendees: 88, maxAttendees: 150),
         LiveSession(id: 4, title: "Monthly Group Q&A with Mia", host: "Mia", image: "mia_avatar", date: "Sat", time: "11:00 AM", kind: .groupCall, attendees: 38, maxAttendees: 100),
+        LiveSession(id: 7, title: "Healing After Heartbreak", host: "Dr. Sarah Thompson", image: "coach_sarah", date: "Sun", time: "5:00 PM", kind: .groupCall, attendees: 19, maxAttendees: 30),
+        LiveSession(id: 8, title: "Style & First Impressions", host: "David Chen", image: "coach_david", date: "Mon, Oct 19", time: "8:00 PM", kind: .live, attendees: 27, maxAttendees: 50),
+        LiveSession(id: 9, title: "Ask Mia Anything", host: "Mia", image: "mia_avatar", date: "Tue, Oct 20", time: "7:00 PM", kind: .groupCall, attendees: 64, maxAttendees: 100),
+        LiveSession(id: 10, title: "Body Language Masterclass", host: "Marcus Rodriguez", image: "coach_marcus", date: "Wed, Oct 21", time: "7:00 PM", kind: .webinar, attendees: 52, maxAttendees: 80),
     ]
 
     static let eventThemes = ["All", "Sports", "Drinks", "Cigars", "Networking", "Social"]
