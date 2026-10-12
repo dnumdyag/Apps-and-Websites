@@ -528,12 +528,12 @@ struct TabPill: View {
             .compositingGroup()
     }
 
-    /// The lens's glass: Apple's clear Liquid Glass, which bends the light at its rim. It fades
-    /// in as the lens lifts and out as it drops back into the platter.
+    /// The lens's glass. It fades in as the lens lifts and out as it drops back into the platter.
+    /// Painted rather than Apple's glass: Apple's glass drawn over the glass bar came out as a flat
+    /// white blob on iOS 26 (cloud recording, 12 October 2026).
     private var lensGlass: some View {
-        Color.clear
+        GlassDroplet()
             .frame(width: lensSize.width, height: lensSize.height)
-            .liquidGlass(in: Capsule(), clear: true) { $0.background { GlassDroplet() } }
             .opacity(lifted ? 1 : 0)
             .position(x: lensCentre, y: rowHeight / 2)
             .frame(width: width, height: rowHeight)
@@ -671,7 +671,7 @@ struct GlassSurface<S: InsettableShape>: View {
     }
 }
 
-/// Before iOS 26: our hand-built lens, a droplet of clear glass. Light pools in its thick rim
+/// Our bar's lens, a droplet of clear glass. Light pools in its thick rim
 /// and a soft shadow lifts it off the bar.
 private struct GlassDroplet: View {
     var body: some View {

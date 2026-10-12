@@ -88,11 +88,11 @@ jobs:
             xcrun simctl terminate "$UDID" com.coachmia.app
             n=$((n+1))
           done
-          # The tab bar's glass droplet in motion, on real Liquid Glass (-tabTour steps through the tabs).
+          # Our own tab bar (the fallback) with its lens in motion (-tabTour steps through the tabs).
           xcrun simctl io "$UDID" recordVideo --codec=h264 --force shots/tab-tour.mp4 &
           rec=$!
           sleep 2
-          xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -tabTour
+          xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -customTabBar -tabTour
           sleep 14
           kill -INT $rec
           wait $rec || true

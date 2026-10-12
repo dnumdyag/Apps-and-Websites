@@ -5,7 +5,8 @@ extension View {
     /// NavigationStack don't receive the bar's safe-area inset from outside the stack (measured
     /// 12 October 2026: on every tab the last content scrolled under the bar), so each scrolling
     /// page adds it itself. 52 pt is the part of the bar above the home-indicator area.
+    /// Apple's own tab bar (iOS 26 and later) makes room by itself.
     func tabBarClearance() -> some View {
-        safeAreaPadding(.bottom, 52)
+        safeAreaPadding(.bottom, MainTabView.usesSystemTabBar ? 0 : 52)
     }
 }

@@ -16,6 +16,12 @@ struct CoachMiaApp: App {
         UINavigationBar.appearance().standardAppearance = nav
         UINavigationBar.appearance().scrollEdgeAppearance = nav
         UINavigationBar.appearance().tintColor = UIColor(Theme.green)
+
+        // Apple's tab bar (iOS 26 and later): tab titles in our sans, as in our own bar.
+        if let tabFont = UIFont(name: "Montserrat-SemiBold", size: 10) {
+            UITabBarItem.appearance().setTitleTextAttributes([.font: tabFont], for: .normal)
+            UITabBarItem.appearance().setTitleTextAttributes([.font: tabFont], for: .selected)
+        }
     }
 
     var body: some Scene {
@@ -56,14 +62,20 @@ struct RootView: View {
 }
 
 struct MainTabView: View {
-    /// iOS 26 and later: false keeps our animated tab icons in a bar of Apple's real Liquid Glass;
-    /// true uses Apple's own tab bar instead (Liquid Glass too, but it shows Apple's symbols only).
+    /// iOS 26 and later: true (the default) uses Apple's own Liquid Glass tab bar, whose selection
+    /// lifts into a magnifying lens under the finger, showing our icons as still images. False uses
+    /// our own bar, where the icons animate. Launching with -customTabBar or -systemTabBar switches
+    /// it and the choice is kept, so a phone can be switched without a new build.
     static var systemTabBar: Bool {
-        #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-systemTabBar") { return true }
-        #endif
-        return false
+        let defaults = UserDefaults.standard
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-customTabBar") { defaults.set(false, forKey: "systemTabBar") }
+        if args.contains("-systemTabBar") { defaults.set(true, forKey: "systemTabBar") }
+        return defaults.object(forKey: "systemTabBar") as? Bool ?? true
     }
+
+    /// True when the screen shows Apple's tab bar rather than ours.
+    static var usesSystemTabBar: Bool { hasLiquidGlass && systemTabBar }
 
     var body: some View {
         #if compiler(>=6.2)
@@ -79,23 +91,46 @@ struct MainTabView: View {
 }
 
 #if compiler(>=6.2)
-/// iOS 26 and later: Apple's Liquid Glass tab bar, which shrinks while scrolling down.
+/// iOS 26 and later: Apple's Liquid Glass tab bar, with our icons drawn into still images.
 @available(iOS 26.0, *)
 private struct GlassTabView: View {
     @EnvironmentObject var state: AppState
 
     var body: some View {
         TabView(selection: $state.selectedTab) {
-            Tab("Home", systemImage: "house", value: AppTab.home) { HomeView() }
-            Tab("Journey", systemImage: "point.topleft.down.curvedto.point.bottomright.up", value: AppTab.journey) { JourneyView() }
-            Tab("Mia", systemImage: "bubble.left", value: AppTab.mia) { CoachView() }
-            Tab("Sessions", systemImage: "play.rectangle", value: AppTab.sessions) { SessionsView() }
-            Tab("Community", systemImage: "person.2", value: AppTab.community) { CommunityView() }
+            Tab(value: AppTab.home) { HomeView() } label: { label("Home", .home) }
+            Tab(value: AppTab.journey) { JourneyView() } label: { label("Journey", .journey) }
+            Tab(value: AppTab.mia) { CoachView() } label: { label("Mia", .mia) }
+            Tab(value: AppTab.sessions) { SessionsView() } label: { label("Sessions", .sessions) }
+            Tab(value: AppTab.community) { CommunityView() } label: { label("Community", .community) }
         }
-        .tabBarMinimizeBehavior(.onScrollDown)
+    }
+
+    private func label(_ title: String, _ tab: AppTab) -> some View {
+        Label { Text(title) } icon: { TabBarImage.image(for: tab) }
     }
 }
 #endif
+
+/// Our tab icons as still images for Apple's tab bar. Each is drawn on the same 30 x 30 pt canvas,
+/// so the icons keep their shared baseline. Apple's bar tints them, except the Mia orb, which keeps
+/// its green and gold.
+@MainActor
+enum TabBarImage {
+    private static var cache: [AppTab: Image] = [:]
+
+    static func image(for tab: AppTab) -> Image {
+        if let image = cache[tab] { return image }
+        let renderer = ImageRenderer(content: TabIcon(tab: tab, selected: tab == .mia, taps: 0)
+            .foregroundStyle(Color.black)
+            .frame(width: 30, height: 30))
+        renderer.scale = 3
+        guard let drawn = renderer.uiImage else { return Image(systemName: "circle") }
+        let image = Image(uiImage: drawn.withRenderingMode(tab == .mia ? .alwaysOriginal : .alwaysTemplate))
+        cache[tab] = image
+        return image
+    }
+}
 
 /// Our tab bar with the animated icons: real Liquid Glass on iOS 26 and later, our hand-built glass on 17 and 18.
 private struct PillTabView: View {
