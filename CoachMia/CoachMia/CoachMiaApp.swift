@@ -104,11 +104,71 @@ private struct GlassTabView: View {
             Tab(value: AppTab.sessions) { SessionsView() } label: { label("Sessions", .sessions) }
             Tab(value: AppTab.community) { CommunityView() } label: { label("Community", .community) }
         }
+        #if DEBUG
+        .onChange(of: state.selectedTab) { _, tab in
+            taps[tab, default: 0] += 1
+            if tab == .sessions { Task { await spinCigar() } }
+        }
+        .task { await tourForRecording() }
+        #endif
     }
 
-    private func label(_ title: String, _ tab: AppTab) -> some View {
+    @ViewBuilder private func label(_ title: String, _ tab: AppTab) -> some View {
+        #if DEBUG
+        if iconTest {
+            testLabel(title, tab)
+        } else {
+            Label { Text(title) } icon: { TabBarImage.image(for: tab) }
+        }
+        #else
         Label { Text(title) } icon: { TabBarImage.image(for: tab) }
+        #endif
     }
+
+    #if DEBUG
+    // -tabIconTest: three ways of animating an icon inside Apple's bar, for a screen recording.
+    // Home: our live animated view. Journey: an Apple symbol with Apple's bounce effect.
+    // Sessions: still images swapped 30 times a second.
+    private var iconTest: Bool { ProcessInfo.processInfo.arguments.contains("-tabIconTest") }
+    @State private var taps: [AppTab: Int] = [:]
+    @State private var spin: Double = 0
+
+    @ViewBuilder private func testLabel(_ title: String, _ tab: AppTab) -> some View {
+        switch tab {
+        case .home:
+            Label { Text(title) } icon: {
+                TabIcon(tab: .home, selected: state.selectedTab == .home, taps: taps[.home, default: 0])
+            }
+        case .journey:
+            Label { Text(title) } icon: {
+                Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
+                    .symbolEffect(.bounce, value: taps[.journey, default: 0])
+            }
+        case .sessions:
+            Label { Text(title) } icon: { TabBarImage.spun(for: .sessions, degrees: -30 * sin(spin * .pi)) }
+        default:
+            Label { Text(title) } icon: { TabBarImage.image(for: tab) }
+        }
+    }
+
+    private func spinCigar() async {
+        for frame in 0...30 {
+            spin = Double(frame) / 30
+            try? await Task.sleep(for: .milliseconds(33))
+        }
+        spin = 0
+    }
+
+    /// -tabTour: tab changes on their own, so a screen recording can show the icons.
+    private func tourForRecording() async {
+        guard ProcessInfo.processInfo.arguments.contains("-tabTour") else { return }
+        try? await Task.sleep(for: .seconds(2))
+        for tab in [AppTab.sessions, .home, .journey, .sessions, .home, .journey] {
+            state.selectedTab = tab
+            try? await Task.sleep(for: .seconds(1.6))
+        }
+    }
+    #endif
 }
 #endif
 
@@ -130,6 +190,19 @@ enum TabBarImage {
         cache[tab] = image
         return image
     }
+
+    #if DEBUG
+    /// A tab icon drawn turned by `degrees` (the -tabIconTest recording).
+    static func spun(for tab: AppTab, degrees: Double) -> Image {
+        let renderer = ImageRenderer(content: TabIcon(tab: tab, selected: false, taps: 0)
+            .rotationEffect(.degrees(degrees))
+            .foregroundStyle(Color.black)
+            .frame(width: 30, height: 30))
+        renderer.scale = 3
+        guard let drawn = renderer.uiImage else { return Image(systemName: "circle") }
+        return Image(uiImage: drawn.withRenderingMode(.alwaysTemplate))
+    }
+    #endif
 }
 
 /// Our tab bar with the animated icons: real Liquid Glass on iOS 26 and later, our hand-built glass on 17 and 18.
