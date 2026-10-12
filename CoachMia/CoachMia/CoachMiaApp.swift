@@ -63,8 +63,8 @@ struct RootView: View {
 
 struct MainTabView: View {
     /// iOS 26 and later: true (the default) uses Apple's own Liquid Glass tab bar, whose selection
-    /// lifts into a magnifying lens under the finger, showing our icons as still images. False uses
-    /// our own bar, where the icons animate. Launching with -customTabBar or -systemTabBar switches
+    /// lifts into a magnifying lens under the finger; our icons play their animations in it as
+    /// flipbooks. False uses our own bar. Launching with -customTabBar or -systemTabBar switches
     /// it and the choice is kept, so a phone can be switched without a new build.
     static var systemTabBar: Bool {
         let defaults = UserDefaults.standard
@@ -91,118 +91,121 @@ struct MainTabView: View {
 }
 
 #if compiler(>=6.2)
-/// iOS 26 and later: Apple's Liquid Glass tab bar, with our icons drawn into still images.
+/// iOS 26 and later: Apple's Liquid Glass tab bar. It shows images rather than live views, so each
+/// icon's tap animation plays as a flipbook: frames drawn ahead of time, swapped 30 times a second
+/// (tested in the cloud recording, 12 October 2026: swapped images animate, a live view stays still).
 @available(iOS 26.0, *)
 private struct GlassTabView: View {
     @EnvironmentObject var state: AppState
+    /// The animation frame each tab's icon is showing; no entry while it is at rest.
+    @State private var frames: [AppTab: Int] = [:]
+    @State private var player: Task<Void, Never>?
 
     var body: some View {
-        TabView(selection: $state.selectedTab) {
+        TabView(selection: selection) {
             Tab(value: AppTab.home) { HomeView() } label: { label("Home", .home) }
             Tab(value: AppTab.journey) { JourneyView() } label: { label("Journey", .journey) }
             Tab(value: AppTab.mia) { CoachView() } label: { label("Mia", .mia) }
             Tab(value: AppTab.sessions) { SessionsView() } label: { label("Sessions", .sessions) }
             Tab(value: AppTab.community) { CommunityView() } label: { label("Community", .community) }
         }
+        .onChange(of: state.selectedTab) { _, tab in play(tab) }
+        .task { await TabBarImage.prepare() }
         #if DEBUG
-        .onChange(of: state.selectedTab) { _, tab in
-            taps[tab, default: 0] += 1
-            if tab == .sessions { Task { await spinCigar() } }
-        }
         .task { await tourForRecording() }
         #endif
     }
 
-    @ViewBuilder private func label(_ title: String, _ tab: AppTab) -> some View {
-        #if DEBUG
-        if iconTest {
-            testLabel(title, tab)
-        } else {
-            Label { Text(title) } icon: { TabBarImage.image(for: tab) }
+    /// Tapping the tab that is already open plays its animation again, as in our own bar.
+    private var selection: Binding<AppTab> {
+        Binding(get: { state.selectedTab }, set: { tab in
+            if tab == state.selectedTab { play(tab) }
+            state.selectedTab = tab
+        })
+    }
+
+    private func label(_ title: String, _ tab: AppTab) -> some View {
+        Label { Text(title) } icon: {
+            TabBarImage.image(for: tab, selected: state.selectedTab == tab, frame: frames[tab])
         }
-        #else
-        Label { Text(title) } icon: { TabBarImage.image(for: tab) }
-        #endif
+    }
+
+    /// Plays `tab`'s icon animation; any other icon still moving goes straight back to rest.
+    private func play(_ tab: AppTab) {
+        player?.cancel()
+        frames = [:]
+        player = Task { @MainActor in
+            let clock = ContinuousClock()
+            let start = clock.now
+            for frame in 0..<TabBarImage.frameCount(for: tab) {
+                guard !Task.isCancelled else { return }
+                frames[tab] = frame
+                try? await clock.sleep(until: start + TabBarImage.frameLength * (frame + 1))
+            }
+            frames[tab] = nil
+        }
     }
 
     #if DEBUG
-    // -tabIconTest: three ways of animating an icon inside Apple's bar, for a screen recording.
-    // Home: our live animated view. Journey: an Apple symbol with Apple's bounce effect.
-    // Sessions: still images swapped 30 times a second.
-    private var iconTest: Bool { ProcessInfo.processInfo.arguments.contains("-tabIconTest") }
-    @State private var taps: [AppTab: Int] = [:]
-    @State private var spin: Double = 0
-
-    @ViewBuilder private func testLabel(_ title: String, _ tab: AppTab) -> some View {
-        switch tab {
-        case .home:
-            Label { Text(title) } icon: {
-                TabIcon(tab: .home, selected: state.selectedTab == .home, taps: taps[.home, default: 0])
-            }
-        case .journey:
-            Label { Text(title) } icon: {
-                Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
-                    .symbolEffect(.bounce, value: taps[.journey, default: 0])
-            }
-        case .sessions:
-            Label { Text(title) } icon: { TabBarImage.spun(for: .sessions, degrees: -30 * sin(spin * .pi)) }
-        default:
-            Label { Text(title) } icon: { TabBarImage.image(for: tab) }
-        }
-    }
-
-    private func spinCigar() async {
-        for frame in 0...30 {
-            spin = Double(frame) / 30
-            try? await Task.sleep(for: .milliseconds(33))
-        }
-        spin = 0
-    }
-
     /// -tabTour: tab changes on their own, so a screen recording can show the icons.
     private func tourForRecording() async {
         guard ProcessInfo.processInfo.arguments.contains("-tabTour") else { return }
         try? await Task.sleep(for: .seconds(2))
-        for tab in [AppTab.sessions, .home, .journey, .sessions, .home, .journey] {
+        for tab in [AppTab.journey, .mia, .sessions, .community, .home] {
             state.selectedTab = tab
-            try? await Task.sleep(for: .seconds(1.6))
+            try? await Task.sleep(for: .seconds(2))
         }
     }
     #endif
 }
 #endif
 
-/// Our tab icons as still images for Apple's tab bar. Each is drawn on the same 30 x 30 pt canvas,
-/// so the icons keep their shared baseline. Apple's bar tints them, except the Mia orb, which keeps
-/// its green and gold.
+/// Our tab icons as images for Apple's tab bar, in our own colours: green with gold details when
+/// selected, ink when not. Each is drawn on the same 30 x 30 pt canvas, so the icons keep their
+/// shared baseline. Frames of the tap animations are kept once drawn.
 @MainActor
 enum TabBarImage {
-    private static var cache: [AppTab: Image] = [:]
+    static let framesPerSecond = 30
+    static var frameLength: Duration { .seconds(1) / framesPerSecond }
 
-    static func image(for tab: AppTab) -> Image {
-        if let image = cache[tab] { return image }
-        let renderer = ImageRenderer(content: TabIcon(tab: tab, selected: tab == .mia, taps: 0)
-            .foregroundStyle(Color.black)
+    private struct Key: Hashable {
+        let tab: AppTab
+        let selected: Bool
+        let frame: Int?
+    }
+
+    private static var cache: [Key: Image] = [:]
+
+    /// Frames in a tab's animation, the last one at rest.
+    static func frameCount(for tab: AppTab) -> Int {
+        Int((TabIcon.duration(of: tab) * Double(framesPerSecond)).rounded(.up)) + 1
+    }
+
+    /// The icon at rest, or at `frame` of its tap animation.
+    static func image(for tab: AppTab, selected: Bool, frame: Int? = nil) -> Image {
+        let key = Key(tab: tab, selected: selected, frame: frame)
+        if let image = cache[key] { return image }
+        let time = frame.map { Double($0) / Double(framesPerSecond) }
+        let renderer = ImageRenderer(content: TabIcon(tab: tab, selected: selected, taps: 0, time: time)
+            .foregroundStyle(selected ? Theme.green : Color(hex: 0x0B1410))
             .frame(width: 30, height: 30))
         renderer.scale = 3
         guard let drawn = renderer.uiImage else { return Image(systemName: "circle") }
-        let image = Image(uiImage: drawn.withRenderingMode(tab == .mia ? .alwaysOriginal : .alwaysTemplate))
-        cache[tab] = image
+        let image = Image(uiImage: drawn.withRenderingMode(.alwaysOriginal))
+        cache[key] = image
         return image
     }
 
-    #if DEBUG
-    /// A tab icon drawn turned by `degrees` (the -tabIconTest recording).
-    static func spun(for tab: AppTab, degrees: Double) -> Image {
-        let renderer = ImageRenderer(content: TabIcon(tab: tab, selected: false, taps: 0)
-            .rotationEffect(.degrees(degrees))
-            .foregroundStyle(Color.black)
-            .frame(width: 30, height: 30))
-        renderer.scale = 3
-        guard let drawn = renderer.uiImage else { return Image(systemName: "circle") }
-        return Image(uiImage: drawn.withRenderingMode(.alwaysTemplate))
+    /// Draws every selected icon's frames ahead of time, one at a time between screen updates,
+    /// so the first tap on each tab already plays smoothly.
+    static func prepare() async {
+        for tab in [AppTab.home, .journey, .mia, .sessions, .community] {
+            for frame in 0..<frameCount(for: tab) {
+                _ = image(for: tab, selected: true, frame: frame)
+                await Task.yield()
+            }
+        }
     }
-    #endif
 }
 
 /// Our tab bar with the animated icons: real Liquid Glass on iOS 26 and later, our hand-built glass on 17 and 18.

@@ -88,11 +88,11 @@ jobs:
             xcrun simctl terminate "$UDID" com.coachmia.app
             n=$((n+1))
           done
-          # Apple's tab bar: can our icons animate inside it? (-tabIconTest, see GlassTabView.)
+          # Apple's tab bar with our icons' animations playing as flipbooks (-tabTour changes tabs).
           xcrun simctl io "$UDID" recordVideo --codec=h264 --force shots/system-tab-tour.mp4 &
           rec=$!
           sleep 2
-          xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -systemTabBar -tabIconTest -tabTour
+          xcrun simctl launch "$UDID" com.coachmia.app -demoProfile -systemTabBar -tabTour
           sleep 14
           kill -INT $rec
           wait $rec || true

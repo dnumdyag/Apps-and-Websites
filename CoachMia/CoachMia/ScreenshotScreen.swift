@@ -3,6 +3,33 @@ import SwiftUI
 
 /// Opens one screen on its own for the CI screenshot job (`-screen <name>`), so every
 /// screen, sheet and step can be checked without tapping through the app. Debug builds only.
+/// `-screen flipbook`: every frame Apple's tab bar plays for each icon (see TabBarImage), one row per tab.
+private struct FlipbookSheet: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach([AppTab.home, .journey, .mia, .sessions, .community], id: \.self) { tab in
+                    let count = TabBarImage.frameCount(for: tab)
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 2), count: 12), spacing: 2) {
+                        ForEach(0..<count, id: \.self) { frame in
+                            TabBarImage.image(for: tab, selected: true, frame: frame)
+                                .background(Color.white)
+                        }
+                    }
+                    HStack(spacing: 2) {
+                        TabBarImage.image(for: tab, selected: true).background(Color.white)
+                        TabBarImage.image(for: tab, selected: false).background(Color.white)
+                    }
+                    Divider()
+                }
+            }
+            .padding(.top, 60)
+            .padding(.horizontal, 8)
+        }
+        .background(Color.gray.opacity(0.3))
+    }
+}
+
 struct ScreenshotScreen: View {
     let name: String
 
@@ -24,6 +51,7 @@ struct ScreenshotScreen: View {
         case "recordings": SessionsView(startSegment: .recordings)
         case "event": EventBookingSheet(event: MockData.memberEvents[1])
         case "icons": IconLab()
+        case "flipbook": FlipbookSheet()
         default: MainTabView() // "chat": AppState opens the Mia tab with a sample conversation
         }
     }

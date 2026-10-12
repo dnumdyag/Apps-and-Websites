@@ -2,10 +2,13 @@ import SwiftUI
 import CoreText
 
 /// Tab bar icons, each with a small animation when tapped. `taps` goes up by one on every tap.
+/// With `time` set, the icon is drawn still at that moment of its animation instead, so Apple's tab
+/// bar (which shows images, not live views) can play it as a flipbook.
 struct TabIcon: View {
     let tab: AppTab
     let selected: Bool
     let taps: Int
+    var time: Double? = nil
 
     var body: some View {
         icon.offset(y: Self.baselineShift[tab] ?? 0)
@@ -13,11 +16,22 @@ struct TabIcon: View {
 
     @ViewBuilder private var icon: some View {
         switch tab {
-        case .home: HomeIcon(taps: taps)
-        case .journey: JourneyIcon(taps: taps)
-        case .mia: LiquidOrbIcon(selected: selected, taps: taps)
-        case .sessions: CigarIcon(selected: selected, taps: taps)
-        case .community: CommunityIcon(selected: selected, taps: taps)
+        case .home: HomeIcon(taps: taps, time: time)
+        case .journey: JourneyIcon(taps: taps, time: time)
+        case .mia: LiquidOrbIcon(selected: selected, taps: taps, time: time)
+        case .sessions: CigarIcon(selected: selected, taps: taps, time: time)
+        case .community: CommunityIcon(selected: selected, taps: taps, time: time)
+        }
+    }
+
+    /// How long a tab's tap animation runs, in seconds.
+    static func duration(of tab: AppTab) -> Double {
+        switch tab {
+        case .home: HomeIcon.duration
+        case .journey: JourneyIcon.duration
+        case .mia: LiquidOrbIcon.duration
+        case .sessions: CigarIcon.duration
+        case .community: CommunityIcon.duration
         }
     }
 
@@ -56,6 +70,7 @@ private struct Grid {
 
 private struct HomeIcon: View {
     let taps: Int
+    var time: Double?
 
     // Where the chimney and door sit on Apple's house.fill, as fractions of the symbol's frame
     // (measured from the symbol itself).
@@ -71,57 +86,68 @@ private struct HomeIcon: View {
         var smoke: CGFloat = 0
     }
 
+    static var duration: Double { KeyframeTimeline(initialValue: Motion()) { motion() }.duration }
+
     var body: some View {
-        KeyframeAnimator(initialValue: Motion(), trigger: taps) { m in
-            Image(systemName: "house.fill")
-                .font(.system(size: 21, weight: .medium))
-                .overlay {
-                    GeometryReader { geo in
-                        let size = geo.size
-                        let door = CGRect(x: Self.door.minX * size.width, y: Self.door.minY * size.height,
-                                          width: Self.door.width * size.width, height: Self.door.height * size.height)
-                        // Warm light through the gap on the latch side of the door.
-                        RoundedRectangle(cornerRadius: 0.8)
-                            .fill(Theme.goldDot)
-                            .frame(width: door.width * m.crack, height: door.height)
-                            .position(x: door.maxX - door.width * m.crack / 2, y: door.midY)
-                            .opacity(m.glow)
-                        ChimneySmoke(progress: m.smoke)
-                            .position(x: Self.chimney.x * size.width, y: Self.chimney.y * size.height)
-                    }
+        if let time {
+            pose(KeyframeTimeline(initialValue: Motion()) { Self.motion() }.value(time: time))
+        } else {
+            KeyframeAnimator(initialValue: Motion(), trigger: taps) { pose($0) } keyframes: { _ in Self.motion() }
+        }
+    }
+
+    @ViewBuilder
+    private func pose(_ m: Motion) -> some View {
+        Image(systemName: "house.fill")
+            .font(.system(size: 21, weight: .medium))
+            .overlay {
+                GeometryReader { geo in
+                    let size = geo.size
+                    let door = CGRect(x: Self.door.minX * size.width, y: Self.door.minY * size.height,
+                                      width: Self.door.width * size.width, height: Self.door.height * size.height)
+                    // Warm light through the gap on the latch side of the door.
+                    RoundedRectangle(cornerRadius: 0.8)
+                        .fill(Theme.goldDot)
+                        .frame(width: door.width * m.crack, height: door.height)
+                        .position(x: door.maxX - door.width * m.crack / 2, y: door.midY)
+                        .opacity(m.glow)
+                    ChimneySmoke(progress: m.smoke)
+                        .position(x: Self.chimney.x * size.width, y: Self.chimney.y * size.height)
                 }
-                .frame(width: 30, height: 26)
-                .scaleEffect(x: m.squashX, y: m.squashY, anchor: .bottom)
-                .offset(y: m.lift)
-        } keyframes: { _ in
-            // Squash as it is pressed down, then a gentle bounce back up.
-            KeyframeTrack(\.squashY) {
-                CubicKeyframe(0.92, duration: 0.09)
-                SpringKeyframe(1, duration: 0.45, spring: .bouncy)
             }
-            KeyframeTrack(\.squashX) {
-                CubicKeyframe(1.05, duration: 0.09)
-                SpringKeyframe(1, duration: 0.45, spring: .bouncy)
-            }
-            KeyframeTrack(\.lift) {
-                CubicKeyframe(0, duration: 0.09)
-                CubicKeyframe(-2, duration: 0.14)
-                SpringKeyframe(0, duration: 0.32, spring: .bouncy)
-            }
-            KeyframeTrack(\.crack) {
-                CubicKeyframe(0.55, duration: 0.2)
-                LinearKeyframe(0.55, duration: 0.35)
-                CubicKeyframe(0, duration: 0.35)
-            }
-            KeyframeTrack(\.glow) {
-                CubicKeyframe(1, duration: 0.15)
-                LinearKeyframe(1, duration: 0.45)
-                CubicKeyframe(0, duration: 0.4)
-            }
-            KeyframeTrack(\.smoke) {
-                MoveKeyframe(0)
-                LinearKeyframe(1, duration: 1.3)
-            }
+            .frame(width: 30, height: 26)
+            .scaleEffect(x: m.squashX, y: m.squashY, anchor: .bottom)
+            .offset(y: m.lift)
+    }
+
+    @KeyframesBuilder<Motion> private static func motion() -> some Keyframes<Motion> {
+        // Squash as it is pressed down, then a gentle bounce back up.
+        KeyframeTrack(\.squashY) {
+            CubicKeyframe(0.92, duration: 0.09)
+            SpringKeyframe(1, duration: 0.45, spring: .bouncy)
+        }
+        KeyframeTrack(\.squashX) {
+            CubicKeyframe(1.05, duration: 0.09)
+            SpringKeyframe(1, duration: 0.45, spring: .bouncy)
+        }
+        KeyframeTrack(\.lift) {
+            CubicKeyframe(0, duration: 0.09)
+            CubicKeyframe(-2, duration: 0.14)
+            SpringKeyframe(0, duration: 0.32, spring: .bouncy)
+        }
+        KeyframeTrack(\.crack) {
+            CubicKeyframe(0.55, duration: 0.2)
+            LinearKeyframe(0.55, duration: 0.35)
+            CubicKeyframe(0, duration: 0.35)
+        }
+        KeyframeTrack(\.glow) {
+            CubicKeyframe(1, duration: 0.15)
+            LinearKeyframe(1, duration: 0.45)
+            CubicKeyframe(0, duration: 0.4)
+        }
+        KeyframeTrack(\.smoke) {
+            MoveKeyframe(0)
+            LinearKeyframe(1, duration: 1.3)
         }
     }
 }
@@ -149,6 +175,7 @@ private struct ChimneySmoke: View {
 
 private struct JourneyIcon: View {
     let taps: Int
+    var time: Double?
 
     private struct Motion {
         var draw: CGFloat = 1
@@ -157,41 +184,52 @@ private struct JourneyIcon: View {
         var flex: CGFloat = 0
     }
 
+    static var duration: Double { KeyframeTimeline(initialValue: Motion()) { motion() }.duration }
+
     var body: some View {
-        KeyframeAnimator(initialValue: Motion(), trigger: taps) { m in
-            ZStack {
-                JourneyRings()
-                    .stroke(style: StrokeStyle(lineWidth: 2.1))
-                JourneyCurve(flex: m.flex, progress: m.draw)
-                    .stroke(style: StrokeStyle(lineWidth: 2.1, lineCap: .round))
-                JourneyDot(t: m.dot, flex: m.flex)
-                    .opacity(m.dotOpacity)
-            }
-            .frame(width: 26, height: 26)
-        } keyframes: { _ in
-            // MoveKeyframe jumps without carrying speed into the next keyframe; a fast
-            // LinearKeyframe here made the cubic curve dip below zero and hide the line.
-            // A short pause first, so the screen change doesn't swallow the start of the line.
-            KeyframeTrack(\.draw) {
-                MoveKeyframe(0)
-                LinearKeyframe(0, duration: 0.15)
-                CubicKeyframe(1, duration: 0.6)
-            }
-            KeyframeTrack(\.dot) {
-                MoveKeyframe(0)
-                LinearKeyframe(0, duration: 0.15)
-                CubicKeyframe(1, duration: 0.6)
-            }
-            KeyframeTrack(\.dotOpacity) {
-                MoveKeyframe(1)
-                LinearKeyframe(1, duration: 0.75)
-                CubicKeyframe(0, duration: 0.25)
-            }
-            KeyframeTrack(\.flex) {
-                LinearKeyframe(0, duration: 0.72)
-                CubicKeyframe(1.2, duration: 0.14)
-                SpringKeyframe(0, duration: 0.45, spring: .bouncy)
-            }
+        if let time {
+            pose(KeyframeTimeline(initialValue: Motion()) { Self.motion() }.value(time: time))
+        } else {
+            KeyframeAnimator(initialValue: Motion(), trigger: taps) { pose($0) } keyframes: { _ in Self.motion() }
+        }
+    }
+
+    @ViewBuilder
+    private func pose(_ m: Motion) -> some View {
+        ZStack {
+            JourneyRings()
+                .stroke(style: StrokeStyle(lineWidth: 2.1))
+            JourneyCurve(flex: m.flex, progress: m.draw)
+                .stroke(style: StrokeStyle(lineWidth: 2.1, lineCap: .round))
+            JourneyDot(t: m.dot, flex: m.flex)
+                .opacity(m.dotOpacity)
+        }
+        .frame(width: 26, height: 26)
+    }
+
+    @KeyframesBuilder<Motion> private static func motion() -> some Keyframes<Motion> {
+        // MoveKeyframe jumps without carrying speed into the next keyframe; a fast
+        // LinearKeyframe here made the cubic curve dip below zero and hide the line.
+        // A short pause first, so the screen change doesn't swallow the start of the line.
+        KeyframeTrack(\.draw) {
+            MoveKeyframe(0)
+            LinearKeyframe(0, duration: 0.15)
+            CubicKeyframe(1, duration: 0.6)
+        }
+        KeyframeTrack(\.dot) {
+            MoveKeyframe(0)
+            LinearKeyframe(0, duration: 0.15)
+            CubicKeyframe(1, duration: 0.6)
+        }
+        KeyframeTrack(\.dotOpacity) {
+            MoveKeyframe(1)
+            LinearKeyframe(1, duration: 0.75)
+            CubicKeyframe(0, duration: 0.25)
+        }
+        KeyframeTrack(\.flex) {
+            LinearKeyframe(0, duration: 0.72)
+            CubicKeyframe(1.2, duration: 0.14)
+            SpringKeyframe(0, duration: 0.45, spring: .bouncy)
         }
     }
 }
@@ -242,15 +280,51 @@ private struct JourneyDot: Shape {
 private struct CommunityIcon: View {
     let selected: Bool
     let taps: Int
+    var time: Double?
+
+    private var front: Color { selected ? Theme.green : Color(hex: 0x0B1410) }
+    private var back: Color { selected ? Theme.goldDot : Color(hex: 0x0B1410) }
+
+    /// The flipbook's version of Apple's layer-by-layer bounce: the front figure hops, then the back one.
+    private struct Hop {
+        var front: CGFloat = 0
+        var back: CGFloat = 0
+    }
+
+    static var duration: Double { KeyframeTimeline(initialValue: Hop()) { hops() }.duration }
 
     var body: some View {
+        if let time {
+            let hop = KeyframeTimeline(initialValue: Hop()) { Self.hops() }.value(time: time)
+            ZStack {
+                figures.foregroundStyle(front, Color.clear).offset(y: hop.front)
+                figures.foregroundStyle(Color.clear, back).offset(y: hop.back)
+            }
+            .frame(width: 30, height: 26)
+        } else {
+            figures
+                .foregroundStyle(front, back)
+                .symbolEffect(.bounce.up.byLayer, options: .speed(1.1), value: taps)
+                .frame(width: 30, height: 26)
+        }
+    }
+
+    private var figures: some View {
         Image(systemName: "person.2.fill")
             .font(.system(size: 21, weight: .medium))
             .symbolRenderingMode(.palette)
-            .foregroundStyle(selected ? Theme.green : Color(hex: 0x0B1410),
-                             selected ? Theme.goldDot : Color(hex: 0x0B1410))
-            .symbolEffect(.bounce.up.byLayer, options: .speed(1.1), value: taps)
-            .frame(width: 30, height: 26)
+    }
+
+    @KeyframesBuilder<Hop> private static func hops() -> some Keyframes<Hop> {
+        KeyframeTrack(\.front) {
+            CubicKeyframe(-2.6, duration: 0.12)
+            SpringKeyframe(0, duration: 0.42, spring: .bouncy)
+        }
+        KeyframeTrack(\.back) {
+            LinearKeyframe(0, duration: 0.08)
+            CubicKeyframe(-2.6, duration: 0.12)
+            SpringKeyframe(0, duration: 0.42, spring: .bouncy)
+        }
     }
 }
 
@@ -260,6 +334,7 @@ private struct CommunityIcon: View {
 private struct CigarIcon: View {
     let selected: Bool
     let taps: Int
+    var time: Double?
 
     /// `.bar` draws it in the tab bar's own colour like the other icons (details as fine gaps, the band
     /// gold when selected, ash and smoke at half strength); `.natural` draws it in a cigar's colours.
@@ -272,49 +347,60 @@ private struct CigarIcon: View {
         var smoke: CGFloat = 1
     }
 
+    static var duration: Double { KeyframeTimeline(initialValue: Motion()) { motion() }.duration }
+
     var body: some View {
-        KeyframeAnimator(initialValue: Motion(), trigger: taps) { m in
-            GeometryReader { geo in
-                let rect = CGRect(origin: .zero, size: geo.size)
-                let unit = Grid(rect: rect).unit
-                let pivot = Robusto.point(Robusto.pivot, in: rect)
-                let tip = Robusto.point(Robusto.smokeStart, in: rect)
-                let angle = -11 * m.lift
-                // Where the tip has moved to, so the smoke rides with it but stays upright.
-                let rad = Double(angle) * .pi / 180
-                let v = CGPoint(x: tip.x - pivot.x, y: tip.y - pivot.y)
-                let moved = CGPoint(x: pivot.x + v.x * cos(rad) - v.y * sin(rad),
-                                    y: pivot.y + v.x * sin(rad) + v.y * cos(rad))
-                ZStack {
-                    cigar(in: rect, ember: m.ember)
-                        .rotationEffect(.degrees(Double(angle)),
-                                        anchor: UnitPoint(x: pivot.x / rect.width, y: pivot.y / rect.height))
-                    smoke(progress: m.smoke, unit: unit)
-                        .offset(x: moved.x - tip.x, y: moved.y - tip.y)
-                }
-                .offset(y: -1.1 * unit * m.lift)
+        if let time {
+            pose(KeyframeTimeline(initialValue: Motion()) { Self.motion() }.value(time: time))
+        } else {
+            KeyframeAnimator(initialValue: Motion(), trigger: taps) { pose($0) } keyframes: { _ in Self.motion() }
+        }
+    }
+
+    @ViewBuilder
+    private func pose(_ m: Motion) -> some View {
+        GeometryReader { geo in
+            let rect = CGRect(origin: .zero, size: geo.size)
+            let unit = Grid(rect: rect).unit
+            let pivot = Robusto.point(Robusto.pivot, in: rect)
+            let tip = Robusto.point(Robusto.smokeStart, in: rect)
+            let angle = -11 * m.lift
+            // Where the tip has moved to, so the smoke rides with it but stays upright.
+            let rad = Double(angle) * .pi / 180
+            let v = CGPoint(x: tip.x - pivot.x, y: tip.y - pivot.y)
+            let moved = CGPoint(x: pivot.x + v.x * cos(rad) - v.y * sin(rad),
+                                y: pivot.y + v.x * sin(rad) + v.y * cos(rad))
+            ZStack {
+                cigar(in: rect, ember: m.ember)
+                    .rotationEffect(.degrees(Double(angle)),
+                                    anchor: UnitPoint(x: pivot.x / rect.width, y: pivot.y / rect.height))
+                smoke(progress: m.smoke, unit: unit)
+                    .offset(x: moved.x - tip.x, y: moved.y - tip.y)
             }
-            .frame(width: 30, height: 26)
-        } keyframes: { _ in
-            // Raised to the lips, a moment there, then a soft spring back down.
-            KeyframeTrack(\.lift) {
-                CubicKeyframe(1, duration: 0.34)
-                LinearKeyframe(1, duration: 0.08)
-                SpringKeyframe(0, duration: 0.85, spring: .bouncy)
-            }
-            // The ember glows with the draw.
-            KeyframeTrack(\.ember) {
-                LinearKeyframe(0, duration: 0.15)
-                CubicKeyframe(1, duration: 0.25)
-                LinearKeyframe(1, duration: 0.2)
-                CubicKeyframe(0, duration: 0.6)
-            }
-            // Then the smoke curls up again from the tip.
-            KeyframeTrack(\.smoke) {
-                MoveKeyframe(0)
-                LinearKeyframe(0, duration: 0.5)
-                CubicKeyframe(1, duration: 0.8)
-            }
+            .offset(y: -1.1 * unit * m.lift)
+        }
+        .frame(width: 30, height: 26)
+    }
+
+    @KeyframesBuilder<Motion> private static func motion() -> some Keyframes<Motion> {
+        // Raised to the lips, a moment there, then a soft spring back down.
+        KeyframeTrack(\.lift) {
+            CubicKeyframe(1, duration: 0.34)
+            LinearKeyframe(1, duration: 0.08)
+            SpringKeyframe(0, duration: 0.85, spring: .bouncy)
+        }
+        // The ember glows with the draw.
+        KeyframeTrack(\.ember) {
+            LinearKeyframe(0, duration: 0.15)
+            CubicKeyframe(1, duration: 0.25)
+            LinearKeyframe(1, duration: 0.2)
+            CubicKeyframe(0, duration: 0.6)
+        }
+        // Then the smoke curls up again from the tip.
+        KeyframeTrack(\.smoke) {
+            MoveKeyframe(0)
+            LinearKeyframe(0, duration: 0.5)
+            CubicKeyframe(1, duration: 0.8)
         }
     }
 
@@ -521,52 +607,64 @@ private struct RobustoSmoke: Shape {
 private struct LiquidOrbIcon: View {
     let selected: Bool
     let taps: Int
+    var time: Double?
 
     private static let size: CGFloat = 23
     private static let blobColors = [Theme.goldDot, Theme.onGreenMuted, Theme.goldOnGreen]
     private static let blobSizes: [CGFloat] = [0.39, 0.32, 0.25]
 
+    static var duration: Double { KeyframeTimeline(initialValue: CGFloat(0)) { motion() }.duration }
+
     var body: some View {
-        KeyframeAnimator(initialValue: CGFloat(0), trigger: taps) { p in
-            let b = envelope(p, 0.25, 0.7)
-            let wobble = 1 + 0.045 * sin(p * .pi * 6) * b
+        if let time {
+            pose(KeyframeTimeline(initialValue: CGFloat(0)) { Self.motion() }.value(time: time))
+        } else {
+            KeyframeAnimator(initialValue: CGFloat(0), trigger: taps) { pose($0) } keyframes: { _ in Self.motion() }
+        }
+    }
+
+    @ViewBuilder
+    private func pose(_ p: CGFloat) -> some View {
+        let b = envelope(p, 0.25, 0.7)
+        let wobble = 1 + 0.045 * sin(p * .pi * 6) * b
+        ZStack {
+            if selected {
+                // Emerald with a soft highlight, as on the app icon.
+                Circle().fill(Theme.greenFill)
+                    .overlay(Circle().fill(RadialGradient(colors: [.white.opacity(0.18), .clear],
+                                                          center: UnitPoint(x: 0.3, y: 0.25),
+                                                          startRadius: 0, endRadius: Self.size * 0.6)))
+            } else {
+                Circle().fill(Color(hex: 0x0B1410))
+            }
             ZStack {
-                if selected {
-                    // Emerald with a soft highlight, as on the app icon.
-                    Circle().fill(Theme.greenFill)
-                        .overlay(Circle().fill(RadialGradient(colors: [.white.opacity(0.18), .clear],
-                                                              center: UnitPoint(x: 0.3, y: 0.25),
-                                                              startRadius: 0, endRadius: Self.size * 0.6)))
-                } else {
-                    Circle().fill(Color(hex: 0x0B1410))
+                ForEach(0..<3, id: \.self) { i in
+                    let a = p * .pi * 2 * (1.2 + CGFloat(i) * 0.45) + CGFloat(i) * 2.1
+                    Circle()
+                        .fill(Self.blobColors[i])
+                        .frame(width: Self.size * Self.blobSizes[i], height: Self.size * Self.blobSizes[i])
+                        .offset(x: Self.size * 0.216 * cos(a), y: Self.size * 0.216 * sin(a * 1.3))
                 }
-                ZStack {
-                    ForEach(0..<3, id: \.self) { i in
-                        let a = p * .pi * 2 * (1.2 + CGFloat(i) * 0.45) + CGFloat(i) * 2.1
-                        Circle()
-                            .fill(Self.blobColors[i])
-                            .frame(width: Self.size * Self.blobSizes[i], height: Self.size * Self.blobSizes[i])
-                            .offset(x: Self.size * 0.216 * cos(a), y: Self.size * 0.216 * sin(a * 1.3))
-                    }
-                }
-                .blur(radius: 1.8)
-                .opacity(b * 0.95)
-                // Clip to the whole orb, not just the swirls' own bounds.
-                .frame(width: Self.size, height: Self.size)
-                .clipShape(Circle())
-                monogram
-                    .opacity(1 - b)
-                    .scaleEffect(1 - 0.25 * b)
             }
-            .compositingGroup()
+            .blur(radius: 1.8)
+            .opacity(b * 0.95)
+            // Clip to the whole orb, not just the swirls' own bounds.
             .frame(width: Self.size, height: Self.size)
-            .scaleEffect(x: wobble, y: 2 - wobble)
-            .frame(width: 30, height: 26)
-        } keyframes: { _ in
-            KeyframeTrack {
-                MoveKeyframe(0)
-                LinearKeyframe(1, duration: 1.6)
-            }
+            .clipShape(Circle())
+            monogram
+                .opacity(1 - b)
+                .scaleEffect(1 - 0.25 * b)
+        }
+        .compositingGroup()
+        .frame(width: Self.size, height: Self.size)
+        .scaleEffect(x: wobble, y: 2 - wobble)
+        .frame(width: 30, height: 26)
+    }
+
+    @KeyframesBuilder<CGFloat> private static func motion() -> some Keyframes<CGFloat> {
+        KeyframeTrack {
+            MoveKeyframe(0)
+            LinearKeyframe(1, duration: 1.6)
         }
     }
 
