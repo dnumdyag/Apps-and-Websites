@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// The opening, about five seconds before Mia's interview (option 1 on the "Coach Mia Splash
-/// Screens" page, as Ed asked on 12 October 2026). Four orbs of liquid light drift in, pull toward
-/// each other and run together where they touch; the gold one whips round and slows; they settle
-/// into a slow ring round the M. Skip moves straight on.
+/// Screens" page, as Ed asked on 12 October 2026). Four soft orbs of light drift in, pull toward
+/// each other and blend where they meet; the gold one whips round and slows; they settle into a
+/// slow ring round the M. Skip moves straight on.
 struct SplashView: View {
     var onFinish: () -> Void
 
@@ -89,9 +89,11 @@ struct SplashView: View {
     }
 }
 
-/// The orbs: liquid light that runs together where orbs touch. Each circles a shared centre while
-/// the circles tighten into a ring; orbs that pass close pull together and swell; the gold one
-/// whips round at 1.5 s (540 degrees, slowing as it goes) and stretches with the speed.
+/// The orbs: four soft orbs of light, blurred together and blended so their light adds up where
+/// they overlap. Each circles a shared centre while the circles tighten into an even ring round
+/// the M; orbs that pass close pull together and swell; the gold one whips round at 1.5 s
+/// (540 degrees, slowing as it goes) and draws out with the speed. Every position is a smooth
+/// function of time, so nothing jumps.
 private struct OrbField: View {
     let t: Double
     let size: CGSize
@@ -100,62 +102,78 @@ private struct OrbField: View {
     static let centreY: CGFloat = 0.44
 
     private struct Orb {
-        /// Centre to edge, lit from the upper left.
-        let colors: [Color]
+        /// The bright core and the softer body of the light, which fades out at 70% of the radius.
+        let core: Color, body: Color
         /// Sizes and distances in hundredths of the screen's width; angles in radians.
         let diameter: Double
         let r0: Double, r1: Double, a0: Double, w: Double
     }
 
     private static let orbs: [Orb] = [
-        Orb(colors: [Color(hex: 0xFFF1C6), Color(hex: 0xE9C778), Color(hex: 0xB8862F)], diameter: 32, r0: 30, r1: 33, a0: -0.6, w: 0.8),
-        Orb(colors: [Color(hex: 0x6FD3A8), Color(hex: 0x23805F), Color(hex: 0x0C3D2E)], diameter: 36, r0: 27, r1: 33, a0: 1.6, w: -0.55),
-        Orb(colors: [Color(hex: 0xFFF8E6), Color(hex: 0xF0DDA6), Color(hex: 0xC9A55B)], diameter: 26, r0: 34, r1: 33, a0: 3.3, w: 1.0),
-        Orb(colors: [Color(hex: 0xF4FBF7), Color(hex: 0xC9E6D8), Color(hex: 0x7FB59C)], diameter: 22, r0: 22, r1: 33, a0: 4.6, w: 0.35),
+        Orb(core: Color(red: 246 / 255, green: 206 / 255, blue: 120 / 255),
+            body: Color(red: 201 / 255, green: 154 / 255, blue: 60 / 255, opacity: 0.8),
+            diameter: 50, r0: 30, r1: 19, a0: -0.6, w: 0.8),
+        Orb(core: Color(red: 226 / 255, green: 244 / 255, blue: 235 / 255, opacity: 0.92),
+            body: Color(red: 190 / 255, green: 222 / 255, blue: 206 / 255, opacity: 0.6),
+            diameter: 42, r0: 27, r1: 21, a0: 1.6, w: -0.55),
+        Orb(core: Color(red: 255 / 255, green: 240 / 255, blue: 196 / 255, opacity: 0.95),
+            body: Color(red: 235 / 255, green: 208 / 255, blue: 138 / 255, opacity: 0.68),
+            diameter: 38, r0: 34, r1: 18, a0: 3.3, w: 1.0),
+        Orb(core: Color(red: 70 / 255, green: 190 / 255, blue: 140 / 255, opacity: 0.78),
+            body: Color(red: 47 / 255, green: 163 / 255, blue: 107 / 255, opacity: 0.5),
+            diameter: 56, r0: 22, r1: 22, a0: 4.6, w: 0.35),
     ]
 
+    /// Back to front: the emerald glow behind, the gold on top.
+    private static let drawOrder = [3, 1, 2, 0]
+
     private struct Pose {
-        var x: CGFloat, y: CGFloat, radius: CGFloat
-        /// Direction of travel round the centre, and how far it is drawn out along it.
+        var x: CGFloat, y: CGFloat, diameter: CGFloat
+        /// Direction of travel round the centre, and how far the orb is drawn out along it.
         var angle: Double, stretch: CGFloat
     }
 
     var body: some View {
         let poses = poses()
         ZStack {
-            // A soft glow of the same light behind the liquid.
-            colour(poses)
-                .blur(radius: size.width * 0.08)
-                .opacity(0.45)
-            ZStack {
-                colour(poses)
-                    .blur(radius: size.width * 0.02)
-                edgeShade(poses)
-                highlights(poses)
+            ForEach(Self.drawOrder, id: \.self) { i in
+                let p = poses[i], orb = Self.orbs[i]
+                Circle()
+                    .fill(RadialGradient(stops: [.init(color: orb.core, location: 0),
+                                                 .init(color: orb.body, location: 0.34),
+                                                 .init(color: orb.body.opacity(0), location: 0.7)],
+                                         center: .center, startRadius: 0, endRadius: p.diameter / 2))
+                    .frame(width: p.diameter, height: p.diameter)
+                    .scaleEffect(x: p.stretch, y: 1 / p.stretch.squareRoot())
+                    .rotationEffect(.radians(p.angle + .pi / 2))
+                    .blendMode(.screen)
+                    .position(x: p.x, y: p.y)
             }
-            .mask(liquid(poses).blur(radius: 0.6))
         }
-        .opacity(smoothstep(0, 0.8, t))
+        .compositingGroup()
+        .blur(radius: size.width * 0.026)
+        .opacity(smoothstep(0, 1.1, t))
     }
 
     private func poses() -> [Pose] {
         let unit = size.width / 100
         let gather = smoothstep(0.9, 3.8, t)
-        let grow = smoothstep(0, 1.2, t)
+        let fade = smoothstep(0, 1.1, t)
         let spinStart = 1.5, turn = 3 * Double.pi, settle = 0.3
-        let spin = t < spinStart ? 0 : turn * (1 - exp(-(t - spinStart) / settle))
+        func spin(_ t: Double) -> Double { t < spinStart ? 0 : turn * (1 - exp(-(t - spinStart) / settle)) }
         let spinSpeed = t < spinStart ? 0 : turn / settle * exp(-(t - spinStart) / settle)
 
         var points: [(x: Double, y: Double, swell: Double, angle: Double, r: Double)] = Self.orbs.enumerated().map { i, orb in
             // Free orbits at first; as they gather, each eases onto an even ring that turns slowly.
-            let free = orb.a0 + orb.w * t + (i == 0 ? spin : 0)
-            let ring = 0.5 * t + Double(i) * .pi / 2 + 0.4
-            var gap = (ring - free).truncatingRemainder(dividingBy: 2 * .pi)
-            if gap > .pi { gap -= 2 * .pi }
-            if gap < -.pi { gap += 2 * .pi }
-            let angle = free + gather * gap
+            func free(_ t: Double) -> Double { orb.a0 + orb.w * t + (i == 0 ? spin(t) : 0) }
+            func ring(_ t: Double) -> Double { 0.5 * t + Double(i) * .pi / 2 + 0.4 }
+            // The whole turns to add are fixed once (by where the orb ends up), so the angle
+            // never jumps a full turn part way through.
+            let turns = ((free(3.8) - ring(3.8)) / (2 * .pi)).rounded()
+            let gap = ring(t) - free(t) + turns * 2 * .pi
+            let angle = free(t) + gather * gap
             let r = orb.r0 * (1 - gather) + orb.r1 * gather
-            return (r * cos(angle), r * sin(angle) * 0.8, 1, angle, r)
+            return (r * cos(angle), r * sin(angle) * 0.9, 1, angle, r)
         }
         // Orbs that pass close pull together and swell, until they settle into the ring.
         for i in points.indices {
@@ -167,87 +185,20 @@ private struct OrbField: View {
                 points[i].y += dy / d * pull
                 points[j].x -= dx / d * pull
                 points[j].y -= dy / d * pull
-                let swell = 0.18 * max(0, 1 - d / 28) * (1 - gather)
+                let swell = 0.2 * max(0, 1 - d / 28)
                 points[i].swell += swell
                 points[j].swell += swell
             }
         }
         return points.enumerated().map { i, p in
-            let breathe = 1 + 0.03 * sin(2.1 * t + Double(i))
-            let radius = Self.orbs[i].diameter / 2 * p.swell * breathe * (0.35 + 0.65 * grow)
+            let breathe = 1 + 0.035 * sin(2.1 * t + Double(i))
+            let scale = p.swell * (0.55 + 0.45 * fade) * breathe
             let speed = i == 0 ? spinSpeed * p.r : 0
             return Pose(x: size.width / 2 + CGFloat(p.x) * unit,
                         y: size.height * Self.centreY + CGFloat(p.y) * unit,
-                        radius: CGFloat(radius) * unit,
+                        diameter: CGFloat(Self.orbs[i].diameter * scale) * unit,
                         angle: p.angle,
-                        stretch: 1 + CGFloat(min(0.6, speed / 1500)))
-        }
-    }
-
-    /// An orb's outline: a circle, drawn longer along its path when it moves fast.
-    private func outline(_ p: Pose, scale: CGFloat = 1) -> Path {
-        let r = p.radius * scale
-        let long = r * p.stretch, short = r / p.stretch.squareRoot()
-        return Path(ellipseIn: CGRect(x: -long, y: -short, width: 2 * long, height: 2 * short))
-            .applying(CGAffineTransform(rotationAngle: p.angle + .pi / 2))
-            .applying(CGAffineTransform(translationX: p.x, y: p.y))
-    }
-
-    /// The merged shape: the orbs blurred together and cut at half strength, so orbs that come
-    /// close join with a smooth bridge and part again as they move apart.
-    private func liquid(_ poses: [Pose]) -> some View {
-        Canvas { context, _ in
-            context.addFilter(.alphaThreshold(min: 0.5, color: .white))
-            context.addFilter(.blur(radius: size.width * 0.03))
-            context.drawLayer { layer in
-                for p in poses { layer.fill(outline(p), with: .color(.white)) }
-            }
-        }
-    }
-
-    /// Each orb's colour, brightest toward the upper left like a lit sphere. Underneath, a wide
-    /// soft wash of every orb's colour, so a bridge between two orbs blends the two.
-    private func colour(_ poses: [Pose]) -> some View {
-        Canvas { context, _ in
-            var wash = context
-            wash.addFilter(.blur(radius: size.width * 0.05))
-            for (i, p) in poses.enumerated() {
-                wash.fill(outline(p, scale: 1.3), with: .color(Self.orbs[i].colors[1]))
-            }
-            for (i, p) in poses.enumerated() {
-                let colors = Self.orbs[i].colors
-                let light = CGPoint(x: p.x - p.radius * 0.3, y: p.y - p.radius * 0.35)
-                context.fill(outline(p),
-                             with: .radialGradient(Gradient(stops: [.init(color: colors[0], location: 0),
-                                                                    .init(color: colors[1], location: 0.5),
-                                                                    .init(color: colors[2], location: 0.85),
-                                                                    .init(color: colors[2].opacity(0), location: 1)]),
-                                                   center: light, startRadius: 0, endRadius: p.radius * 1.55))
-            }
-        }
-    }
-
-    /// Shade inside the edge of the merged shape (not of each orb), so joined orbs read as one
-    /// rounded body of liquid with no seam where they meet.
-    private func edgeShade(_ poses: [Pose]) -> some View {
-        Color.black.opacity(0.3)
-            .mask {
-                Rectangle()
-                    .overlay(liquid(poses).blur(radius: size.width * 0.03).blendMode(.destinationOut))
-                    .compositingGroup()
-            }
-    }
-
-    /// A soft window of light on each orb.
-    private func highlights(_ poses: [Pose]) -> some View {
-        Canvas { context, _ in
-            for p in poses {
-                var glint = context
-                glint.addFilter(.blur(radius: p.radius * 0.12))
-                glint.fill(Path(ellipseIn: CGRect(x: p.x - p.radius * 0.6, y: p.y - p.radius * 0.72,
-                                                  width: p.radius * 0.72, height: p.radius * 0.46)),
-                           with: .color(.white.opacity(0.42)))
-            }
+                        stretch: 1 + CGFloat(min(0.5, speed / 1500)))
         }
     }
 }
