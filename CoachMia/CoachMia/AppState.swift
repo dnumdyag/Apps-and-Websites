@@ -68,6 +68,9 @@ final class AppState: ObservableObject {
             profile = UserProfile()
         }
         apiKey = UserDefaults.standard.string(forKey: Self.apiKeyKey) ?? Config.anthropicAPIKey
+        // Launched with -resetDemo (from the Mac, to set up a phone for a demo): start again
+        // from the splash and Mia's interview.
+        if ProcessInfo.processInfo.arguments.contains("-resetDemo") { resetDemo() }
         applyScreenshotArguments()
     }
 

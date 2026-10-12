@@ -52,6 +52,7 @@ struct ScreenshotScreen: View {
         case "event": EventBookingSheet(event: MockData.memberEvents[1])
         case "icons": IconLab()
         case "flipbook": FlipbookSheet()
+        case "splash": OnboardingView()
         default: MainTabView() // "chat": AppState opens the Mia tab with a sample conversation
         }
     }

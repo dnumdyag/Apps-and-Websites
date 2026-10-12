@@ -118,6 +118,16 @@ struct MiaInterviewView: View {
                     .foregroundStyle(Theme.goldText)
                     .monospacedDigit()
                     .opacity(step == .result ? 0 : 1)
+                if step != .result {
+                    // Straight into the app with what has been answered so far.
+                    Button("Skip") {
+                        MiaVoice.shared.stop()
+                        finish()
+                    }
+                    .font(Theme.sans(12, .semibold))
+                    .foregroundStyle(Theme.muted)
+                    .padding(.leading, 4)
+                }
             }
             ProgressLine(value: Double(step.rawValue) / 5, track: Theme.track, fill: Theme.green, height: 3)
                 .animation(.easeInOut(duration: 0.5), value: step)
@@ -417,7 +427,9 @@ struct MiaInterviewView: View {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
                     lines.append(Line(speaker: .mia, text: text))
                 }
-                try? await Task.sleep(nanoseconds: 250_000_000)
+                // When Mia has a recording of the line, she says it before typing the next one.
+                let spoken = MiaVoice.shared.say(text)
+                try? await Task.sleep(nanoseconds: UInt64((spoken + 0.25) * 1_000_000_000))
             }
             then?()
             try? await Task.sleep(nanoseconds: 200_000_000)

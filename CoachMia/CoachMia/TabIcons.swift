@@ -683,7 +683,7 @@ private struct LiquidOrbIcon: View {
 /// its line box (a Text view centres the line box, which carries invisible space above and below
 /// the letter, so the M drifts). Measured: the M's visual weight sits 2.8% of its width right of
 /// its outline centre, so it is nudged left by 40% of that to sit centred to the eye.
-private struct MonogramShape: Shape {
+struct MonogramShape: Shape {
     var capHeight: CGFloat
 
     private static let outline: CGPath? = {
